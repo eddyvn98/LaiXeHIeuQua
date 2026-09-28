@@ -13,6 +13,16 @@
 - [x] Android project scaffold
 - [x] Tracking / sensors
 - [x] Fuel / best economy
-- [ ] Camera calibration
-- [ ] Dashboard templates
-- [ ] Unit tests / CI
+- [x] Camera calibration
+- [x] Dashboard templates
+- [x] Unit tests / CI
+
+### Checkpoint 3 — UI, camera, tests, CI
+- [x] TFT Sport dashboard
+- [x] Premium Segmented template selection
+- [x] Vico adaptive economy-gap chart
+- [x] Tabler icon pack integration
+- [x] CameraX + ML Kit speed OCR
+- [x] automatic stable calibration sample collection
+- [x] core engine unit tests
+- [x] GitHub Actions build/test/APK artifact
