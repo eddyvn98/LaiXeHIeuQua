@@ -10,9 +10,9 @@
 - [x] Define camera+GPS automatic speed calibration
 - [x] Define v0.1 acceptance criteria
 - [x] Lock library-first implementation strategy
-- [ ] Android project scaffold
-- [ ] Tracking / sensors
-- [ ] Fuel / best economy
+- [x] Android project scaffold
+- [x] Tracking / sensors
+- [x] Fuel / best economy
 - [ ] Camera calibration
 - [ ] Dashboard templates
 - [ ] Unit tests / CI

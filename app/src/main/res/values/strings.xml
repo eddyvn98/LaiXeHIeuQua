@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Lái Xe Hiệu Quả</string>
+    <string name="tracking_channel_name">Theo dõi chuyến đi</string>
+    <string name="tracking_notification_title">Đang theo dõi chuyến đi</string>
+</resources>
