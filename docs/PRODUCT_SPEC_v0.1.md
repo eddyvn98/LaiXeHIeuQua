@@ -467,81 +467,70 @@ Thông tin tổng:
 
 ---
 
-## 14. Best Session / Reference Session
+## 14. Best Economy Reference
 
-### 14.1. Không đồng nhất "Best" với "Fastest"
+"Best" không còn được định nghĩa theo tuyến đường hay chuyến nhanh nhất.
 
-Cần phân biệt:
+Nguồn sự thật là **Fuel Cycle** có mức tiêu hao tốt nhất đã được xác nhận qua các lần đổ xăng.
 
-- **Best Efficient Session**
-- **Fastest Session**
+Best Economy Reference phải:
 
-Mặc định hệ quy chiếu của ứng dụng là:
+- được đóng bởi chu kỳ Full → Full,
+- có confidence đủ tốt,
+- có quãng đường hợp lệ,
+- có tổng lượng nhiên liệu hợp lệ,
+- ưu tiên odometer thực tế khi có,
+- không dùng cycle Low Confidence làm Best.
 
-> **Best Efficient Session**
+Mục tiêu sản phẩm:
 
-Không mặc định chọn chuyến nhanh nhất.
+> Mỗi chu kỳ đổ xăng mới cố gắng chạy được nhiều km hơn chu kỳ tốt nhất trước đó.
 
----
+Từ Best Economy Reference, app học các pattern lái hiệu quả của chính người dùng:
 
-### 14.2. Reference
-
-App có thể tự chọn Best Efficient Session.
-
-Người dùng cũng có thể pin thủ công một Session làm Reference trong tương lai.
-
-Reference Session đóng vai trò như một **Ghost Driver**.
-
----
-
-## 15. Ghost Comparison
-
-Khi route hiện tại phù hợp với một Reference Session:
-
-```
-BEST       ----- ghost
-CURRENT    _____ realtime
-```
-
-App hiển thị hai đường biểu đồ gần như chồng lên nhau để người dùng quan sát mức lệch.
+- vùng tốc độ ổn định,
+- acceleration/jerk,
+- tỷ lệ thời gian giữ nhịp,
+- hard acceleration/braking,
+- stop-go pattern,
+- Eco Target Speed.
 
 ---
 
-## 16. So sánh theo cùng vị trí
+## 15. Economy Comparison / Ghost
 
-Không chỉ so:
+App **không phân biệt tuyến đường** và không cần route matching trong v0.1.
 
-> giây thứ N của Best
+Ghost/reference không còn mang nghĩa "cùng tuyến hôm qua", mà là:
 
-với:
+> hành vi hiện tại và tiến độ của Current Fuel Cycle đang lệch bao nhiêu so với Best Economy Reference.
 
-> giây thứ N của Current.
+Các so sánh ưu tiên:
 
-Cần ưu tiên so tại **cùng vị trí/quãng đường trên route**.
+- Current Cycle km vs Best Cycle km,
+- Projected Cycle Range vs Best Cycle Range,
+- Current driving pattern vs efficient pattern,
+- thời gian trong vùng Eco Target,
+- mức lệch khỏi Eco Target.
 
-Ví dụ tại km 4.72:
+---
 
-Best:
+## 16. So sánh không phụ thuộc tuyến đường
 
-```
-11:32
-42 km/h
-```
+Không dùng map matching hoặc cùng vị trí trên route để so sánh.
 
-Current:
+Thay vào đó engine dùng các tín hiệu độc lập tuyến đường:
 
-```
-12:04
-39 km/h
-```
+- tốc độ,
+- acceleration,
+- jerk,
+- stop/go,
+- traffic state,
+- thời gian giữ vận tốc ổn định,
+- Eco Target adherence,
+- fuel cycle progress.
 
-App có thể xác định:
-
-```
-Current +32s so với Best
-```
-
-Cách này giúp tránh sai lệch do hai chuyến không tiến triển cùng tốc độ theo thời gian.
+Nếu cần biểu đồ hai đường, trục được hiểu là **tiến trình theo thời gian / tiến trình chu kỳ**, không phải alignment theo cùng tọa độ.
 
 ---
 
@@ -1692,14 +1681,189 @@ Không có yêu cầu chọn một trong hai làm giao diện duy nhất.
 
 ---
 
-## 46. Mục tiêu thảo luận tiếp theo
+## 46. Các quyết định mới nhất
 
-Sau khi đã chốt khung UI/template và Speed Sync, các phần cần tiếp tục làm rõ gồm:
+1. Traffic được nhận diện chủ yếu bằng pattern vận tốc theo thời gian, không chỉ một ngưỡng tốc độ đơn.
+2. Trong lúc lái, ưu tiên hiển thị **Eco Target Speed** bằng con số/marker thay vì nhiều câu cảnh báo.
+3. Best reference là **Best Economy Reference** dựa trên Fuel Cycle tốt nhất, không phải Fastest Session.
+4. Không phân biệt tuyến đường trong v0.1.
+5. Prediction tập trung vào khả năng đạt/vượt Best Economy và projected range của chu kỳ hiện tại.
+6. Fuel model tự xử lý partial fill, missing trip, odometer reconciliation và confidence.
+7. Speed calibration ưu tiên **camera realtime đọc đồng hồ xe + GPS/Fused Speed** để tự xây calibration profile.
+8. Camera calibration chỉ cần chạy khi tạo/recalibrate profile, không cần bật thường xuyên.
 
-1. công thức Driving Efficiency,
-2. realtime alert threshold/cooldown,
-3. thuật toán chọn Best Efficient Session,
-4. route matching và Ghost alignment,
-5. prediction confidence,
-6. guided calibration UX,
-7. schema cụ thể cho Dashboard Template.
+---
+
+## 47. Eco Target Speed
+
+Thay cho cảnh báo chữ dài, app cung cấp một con số **Eco Target Speed** để người dùng cố giữ quanh đó.
+
+Eco Target phải:
+
+- chỉ hiện khi confidence đủ,
+- tự ẩn/reset khi traffic hoặc điều kiện thay đổi mạnh,
+- có dead-band thay vì bắt người dùng giữ đúng một số tuyệt đối,
+- ổn định, không nhảy theo từng sample GPS.
+
+Ví dụ:
+
+```
+Current speed: 48 km/h
+Eco Target:    45 km/h
+Acceptable:    43–47 km/h
+```
+
+Target được suy ra từ:
+
+- pattern tiết kiệm trong Best Economy Reference,
+- recent stable speed,
+- acceleration/jerk thấp,
+- trạng thái không traffic.
+
+---
+
+## 48. Traffic Detection
+
+Không chỉ dùng `speed < X`.
+
+Traffic/stop-go được phát hiện bằng rolling window gồm:
+
+- median speed thấp kéo dài,
+- nhiều lần `0 → chạy → 0`,
+- tỷ lệ thời gian đứng yên cao,
+- acceleration/braking dày ở vùng tốc độ thấp.
+
+Khi traffic = true:
+
+- không phạt Efficiency vì stop-go bắt buộc,
+- Eco Target có thể ẩn,
+- không cố yêu cầu người dùng bám tốc độ cao hơn.
+
+---
+
+## 49. Fuel Data Completion & Confidence
+
+### Full-to-full
+
+Chu kỳ Fuel Cycle bắt đầu từ một lần Full và đóng ở lần Full tiếp theo.
+
+Partial fill ở giữa:
+
+- được cộng vào tổng nhiên liệu của cycle,
+- không đóng cycle.
+
+### Distance source
+
+Ưu tiên:
+
+1. Odometer delta nếu có đủ hai đầu Full,
+2. tracked distance nếu app theo dõi đầy đủ,
+3. nếu thiếu dữ liệu thì cycle vẫn lưu nhưng confidence thấp.
+
+### Missing trip
+
+Nếu odometer cho thấy quãng đường thực tế lớn hơn tracked distance:
+
+- dùng odometer làm distance chuẩn,
+- đánh dấu untracked distance.
+
+### Confidence
+
+**High**
+- Full → Full,
+- distance đầy đủ,
+- fuel entries đầy đủ.
+
+**Medium**
+- có partial fill hoặc một số dữ liệu suy ra nhưng cycle vẫn khép kín.
+
+**Low**
+- thiếu trip/fill quan trọng,
+- không có nguồn distance đáng tin.
+
+Low Confidence không được dùng làm Best Economy Reference.
+
+---
+
+## 50. Camera Speed Calibration
+
+Camera calibration dùng CameraX + OCR để đọc tốc độ trên đồng hồ xe theo thời gian thực và ghép với True/Fused GPS Speed theo timestamp.
+
+Pipeline:
+
+```
+CameraX
+  → crop/analysis
+  → ML Kit OCR
+  → vehicle speed samples
+
+Fused Location + sensors
+  → true speed samples
+
+timestamp alignment
+  → calibration point filtering
+  → monotonic piecewise mapping
+```
+
+Chỉ nhận sample khi:
+
+- OCR ổn định,
+- GPS quality đủ,
+- tốc độ không thay đổi nhanh,
+- không hard acceleration/braking,
+- có nhiều frame liên tiếp đồng thuận.
+
+Model ưu tiên **monotonic piecewise interpolation** thay vì bắt buộc linear `a × speed + b`.
+
+Calibration profile lưu theo xe và có thể recalibrate.
+
+---
+
+## 51. Acceptance Criteria v0.1
+
+### Tracking
+
+- chạy liên tục 2 giờ,
+- screen off vẫn tracking,
+- không mất session,
+- recover session sau process/service interruption trong phạm vi hệ điều hành cho phép.
+
+### Speed
+
+- lưu True/Fused Speed tách khỏi Vehicle-Matched Display Speed,
+- smoothing không gây nhảy số khó chịu,
+- không dùng display calibration làm dữ liệu gốc cho analytics.
+
+### Camera calibration
+
+- mục tiêu sai khác trung bình Vehicle-Matched Speed khoảng ≤ 1.5 km/h trong vùng đã calibrate,
+- loại sample OCR/GPS kém,
+- ngoài vùng calibration phải được xem là extrapolation.
+
+### Eco Target
+
+- chỉ hiện khi confidence đủ,
+- không hiện trong traffic/stop-go,
+- có dead-band,
+- không nhảy liên tục.
+
+### Fuel
+
+- hỗ trợ Full → Full,
+- partial fill,
+- odometer reconciliation,
+- confidence,
+- Low Confidence không được làm Best.
+
+### KPI sản phẩm
+
+Cuối mỗi Fuel Cycle, app phải trả lời rõ:
+
+```
+BEST CYCLE       xxx km
+CURRENT CYCLE    xxx km
+PROJECTED        xxx km
+DELTA             ±x km / ±x%
+```
+
+Mục tiêu số 1 là giúp mỗi chu kỳ nhiên liệu chạy được nhiều km hơn Best Economy Reference trước đó.
