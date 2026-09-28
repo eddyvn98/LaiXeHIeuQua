@@ -12,6 +12,7 @@ The implementation intentionally prefers maintained libraries over hand-written 
 | OCR | Google ML Kit Text Recognition | 16.0.1 |
 | Charts | Vico | 3.2.3 |
 | Icons | Composables Tabler Outline | 2.2.1 |
+| KSP | Google KSP | 2.3.12 |
 | Async | Kotlin Coroutines | 1.10.2 |
 
 The Tabler icon collection is MIT licensed. Vico and AndroidX/Google libraries retain their upstream licenses.
