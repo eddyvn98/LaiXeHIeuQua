@@ -26,3 +26,15 @@
 - [x] automatic stable calibration sample collection
 - [x] core engine unit tests
 - [x] GitHub Actions build/test/APK artifact
+
+### Checkpoint 4 — hardening / final validation branch
+- [x] foreground-service restart/session recovery hardening
+- [x] lean zero baseline calibration on sensor start
+- [x] signed speed-fusion correction for deceleration
+- [x] current fuel-cycle distance + projected economy range
+- [x] centered OCR candidate scoring
+- [x] Gradle wrapper 9.6.0
+- [x] workflow_dispatch + wrapper-based CI
+- [x] known limitations / third-party docs
+- [ ] PR CI green
+- [ ] merge final checkpoint to main
