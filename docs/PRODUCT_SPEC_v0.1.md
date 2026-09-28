@@ -550,18 +550,31 @@ Cách này giúp tránh sai lệch do hai chuyến không tiến triển cùng t
 Biểu đồ ưu tiên:
 
 - X = thời gian.
-- Y = quãng đường tích lũy.
+- Y = quãng đường / độ lệch tiến trình so với reference tùy chế độ hiển thị.
 
-Hai series:
+Các series:
 
 - Best,
-- Current.
+- Current,
+- Projected.
 
-Ý nghĩa:
+### 17.1. Ghost chart phải làm rõ chênh lệch
 
-- đường dốc hơn → quãng đường tăng nhanh hơn,
-- đoạn gần ngang → đứng/dừng,
-- hai đường gần chồng nhau → tiến trình tương đồng.
+Nếu luôn vẽ toàn bộ quãng đường từ 0 tới cuối route, Best và Current có thể gần như chồng thành một đường dù thực tế đã lệch hàng chục mét hoặc nhiều giây.
+
+Vì vậy chart chính cần có **Adaptive Ghost Scale / Auto Zoom**:
+
+- tự động scale trục Y quanh vùng chênh lệch giữa Best và Current,
+- khi hai đường rất gần có thể zoom ở mức ví dụ ±30 m,
+- khi lệch vừa có thể mở ra ±80 m,
+- khi lệch lớn có thể mở rộng ±180 m hoặc phù hợp với dữ liệu thực tế,
+- luôn hiển thị mức scale hiện tại để tránh gây hiểu nhầm,
+- luôn hiển thị delta thực tế, ví dụ `Δ -48 m`,
+- Projected tiếp tục từ điểm Current bằng nét khác biệt rõ ràng.
+
+Mục tiêu:
+
+> Người dùng phải nhìn ra được độ lệch ngay lập tức, nhưng biểu đồ không được phóng đại mà không cho biết scale.
 
 Khi cần so theo route, engine vẫn sử dụng vị trí/quãng đường tương ứng để alignment.
 
@@ -818,13 +831,17 @@ Trong lúc lái, người dùng gần như chỉ cần **một Driving Dashboard
 
 Thiết kế theo tinh thần:
 
-- dashboard xe,
+- dashboard xe / TFT sport bike,
 - HUD,
-- gauge,
-- đồng hồ,
+- gauge và cụm đồng hồ thể thao,
+- không chia màn hình thành nhiều card/block rời,
+- ưu tiên SVG icon hơn chữ dài,
+- số điện tử kiểu segmented/LED hiện đại,
+- kim đồng hồ phụ không được đè hoặc chạy xuyên qua phần digital readout,
 - ít text,
 - ít metric cùng lúc,
-- contextual information.
+- contextual information,
+- cho phép thay đổi toàn bộ dashboard bằng template.
 
 ---
 
@@ -1089,6 +1106,10 @@ Android APK
     │
     ├── Fuel Economy Engine
     │
+    ├── Speed Fusion / Speed Sync Engine
+    │
+    ├── Dashboard Template Engine
+    │
     └── Local Database
 ```
 
@@ -1151,6 +1172,36 @@ Chu kỳ giữa các lần full tank.
 
 Route signature và Best Session tương ứng.
 
+### DashboardTemplate
+
+Cấu hình một mẫu dashboard:
+
+- template ID,
+- name,
+- version,
+- category,
+- preview,
+- theme tokens,
+- layout config,
+- component config,
+- behavior config,
+- built-in/custom,
+- favorite,
+- update state.
+
+### SpeedCalibrationProfile
+
+Cấu hình đồng bộ tốc độ theo từng xe/profile:
+
+- profile ID,
+- vehicle name,
+- calibration points,
+- scale factor,
+- offset,
+- calibration quality,
+- created/updated timestamp,
+- active speed mode.
+
 ---
 
 ## 35. Data retention
@@ -1191,6 +1242,16 @@ Cần thảo luận tiếp:
 21. Trong lúc lái ưu tiên voice/rung cho cảnh báo quan trọng.
 22. Traffic/environment không mặc định bị coi là lỗi của người lái.
 23. V0.1 ưu tiên thuật toán có thể giải thích được, chưa cần AI/ML phức tạp.
+24. Dashboard không bị khóa vào một giao diện duy nhất; app có kho nhiều template.
+25. Các prototype TFT Sport Bike, Premium Segmented và các mẫu sau này đều có thể cùng tồn tại trong Template Library.
+26. Người dùng có thể preview, apply, favorite, duplicate và chỉnh mẫu.
+27. Template presentation tách khỏi logic tính toán; đổi mẫu không làm thay đổi dữ liệu/thuật toán.
+28. Dashboard ưu tiên bố cục kiểu cụm đồng hồ thể thao, không chia thành nhiều card/block.
+29. Ghost chart sử dụng Adaptive Ghost Scale / Auto Zoom để làm rõ chênh lệch Best vs Current và luôn hiển thị scale/delta thực tế.
+30. Số tốc độ/gauge có thể dùng kiểu segmented LED hiện đại; kim đồng hồ không được chạy xuyên qua digital readout.
+31. Tốc độ nội bộ dùng True/Fused Speed làm chuẩn cho phân tích.
+32. UI có thể hiển thị Vehicle-Matched Speed đã calibration để đồng bộ cảm giác với đồng hồ xe thật.
+33. Hỗ trợ Speed Calibration Profile theo từng xe/cấu hình.
 
 ---
 
@@ -1243,14 +1304,29 @@ Cần thảo luận tiếp:
 - tank capacity,
 - confidence.
 
-### UI
+### UI / Template Library
 
 - hình dạng gauge,
 - màu sắc,
 - animation,
 - landscape/portrait,
 - always-on behavior,
-- day/night mode.
+- day/night mode,
+- schema template,
+- phạm vi cho phép chỉnh template,
+- import/export template,
+- cơ chế version/update template,
+- cách tạo preview/thumbnail.
+
+### Speed Sync / Calibration
+
+- số điểm calibration tối thiểu,
+- quick calibration và guided calibration,
+- mô hình linear `vehicle_display = a × true_speed + b` hay mô hình piecewise,
+- smoothing/filtering,
+- confidence của calibration,
+- cách xử lý GPS kém,
+- cách quản lý nhiều xe/profile.
 
 ### Battery
 
@@ -1273,3 +1349,357 @@ Cần thảo luận tiếp:
 > **Thiết kế thuật toán "Lái xe hiệu quả" và hệ thống realtime alert.**
 
 Cần biến khái niệm "lái hiệu quả" thành các metric có thể đo, kiểm chứng và giải thích được trước khi bắt đầu code production.
+
+
+---
+
+## 39. Dashboard Template Library / Theme Garage
+
+App không sử dụng một dashboard cố định.
+
+Các giao diện đã thiết kế và các mẫu trong tương lai cùng tồn tại trong **Template Library / Theme Garage**.
+
+Ví dụ category:
+
+- TFT Sport Bike,
+- Premium Segmented,
+- Minimal HUD,
+- Classic Analog Sport,
+- Night Racing,
+- Eco Focus,
+- Ghost Focus,
+- Pro / Data Dense.
+
+### 39.1. Chức năng kho mẫu
+
+Mỗi template hỗ trợ tùy theo loại:
+
+- Preview,
+- Apply,
+- Favorite,
+- Duplicate,
+- Edit,
+- Rename,
+- Delete đối với custom template,
+- Export,
+- Import,
+- Update.
+
+Không yêu cầu người dùng chọn một mẫu duy nhất vĩnh viễn.
+
+Người dùng có thể đổi mẫu bất kỳ lúc nào khi không ở tình huống cần tập trung lái xe.
+
+### 39.2. Built-in và Custom
+
+Template gồm hai nhóm:
+
+**Built-in**
+
+- đi kèm app,
+- có thể được nâng version,
+- không bị sửa trực tiếp; nếu muốn chỉnh thì clone thành custom.
+
+**Custom**
+
+- do người dùng tạo hoặc clone,
+- có thể đổi tên/chỉnh/xóa,
+- lưu local.
+
+### 39.3. Template phải data-driven
+
+Template không được chứa logic tính toán Driving Efficiency riêng.
+
+Template chỉ quyết định:
+
+- layout,
+- visual style,
+- visibility,
+- animation,
+- component type,
+- vị trí component.
+
+Các engine:
+
+- Speed,
+- Efficiency,
+- Ghost,
+- Prediction,
+- Fuel,
+- Alert
+
+vẫn dùng chung cho mọi template.
+
+---
+
+## 40. Cấu trúc Dashboard Template
+
+Một template dự kiến gồm:
+
+### Metadata
+
+- id,
+- name,
+- version,
+- author/source,
+- category,
+- preview image,
+- description,
+- tags.
+
+### Theme Tokens
+
+- background,
+- primary accent,
+- secondary accent,
+- warning,
+- danger,
+- text,
+- glow intensity,
+- line thickness,
+- segmented digit style.
+
+### Layout Config
+
+- speed gauge position/size,
+- secondary gauge positions,
+- ghost chart position/size,
+- alert position,
+- bottom metrics arrangement.
+
+### Component Config
+
+- speed gauge type,
+- efficiency ring type,
+- acceleration gauge type,
+- lean gauge type,
+- ghost chart type,
+- digital readout type,
+- alert style.
+
+### Behavior Config
+
+- animation level,
+- update frequency,
+- auto-hide,
+- contextual visibility,
+- compact/full chart,
+- show/hide secondary values.
+
+---
+
+## 41. Template Repository / Update Strategy
+
+### v0.1
+
+- template built-in nằm trong APK/local assets,
+- có nhiều mẫu để chọn ngay từ đầu,
+- custom template lưu local,
+- chưa bắt buộc backend.
+
+### Giai đoạn sau
+
+Có thể hỗ trợ:
+
+- template package,
+- template manifest,
+- versioning,
+- tải thêm template,
+- cập nhật template,
+- migration khi schema thay đổi.
+
+Template phải có version độc lập với version của app.
+
+---
+
+## 42. Speed Source & Synchronization
+
+App cần phân biệt rõ ít nhất hai lớp tốc độ.
+
+### 42.1. True / Fused Speed
+
+Là tốc độ nội bộ tốt nhất app ước tính từ:
+
+- GNSS speed,
+- accelerometer,
+- motion sensors,
+- smoothing/filtering.
+
+Dùng cho:
+
+- session analytics,
+- Best comparison,
+- Ghost,
+- prediction,
+- Driving Efficiency,
+- fuel model.
+
+Đây là speed chuẩn nội bộ của app.
+
+### 42.2. Vehicle-Matched Speed
+
+Là tốc độ hiển thị đã được calibration để gần với **đồng hồ tốc độ trên xe thật**.
+
+Mục đích:
+
+- tạo cảm giác đồng bộ giữa màn hình điện thoại và đồng hồ xe,
+- giúp người dùng nhìn hai màn hình không thấy chênh quá nhiều.
+
+Vehicle-Matched Speed là lớp presentation/calibration, không thay thế True/Fused Speed trong engine phân tích.
+
+---
+
+## 43. Speed Display Modes
+
+App dự kiến hỗ trợ ba chế độ:
+
+### GPS / True
+
+Số lớn:
+
+- True/Fused Speed.
+
+### Vehicle Sync
+
+Số lớn:
+
+- Vehicle-Matched Speed.
+
+Có thể hiển thị True Speed nhỏ hơn nếu template hỗ trợ.
+
+### Dual
+
+Hiển thị đồng thời:
+
+- True/Fused Speed,
+- Vehicle-Matched Speed.
+
+Template quyết định cách bố trí hai giá trị.
+
+---
+
+## 44. Speed Calibration
+
+### 44.1. Mục tiêu
+
+Hiệu chỉnh app sao cho tốc độ hiển thị có thể gần với đồng hồ của từng xe.
+
+Không giả định rằng sai lệch luôn là một số cộng/trừ cố định.
+
+Mô hình ban đầu có thể dùng:
+
+```
+vehicle_display = a × true_speed + b
+```
+
+Trong đó:
+
+- `true_speed`: True/Fused Speed,
+- `a`: scale factor,
+- `b`: offset.
+
+Mô hình cụ thể vẫn cần kiểm nghiệm bằng dữ liệu thực tế.
+
+### 44.2. Quick Calibration
+
+Người dùng cung cấp nhiều cặp dữ liệu, ví dụ:
+
+```
+Đồng hồ xe 30 km/h ↔ app/GPS X
+Đồng hồ xe 50 km/h ↔ app/GPS Y
+Đồng hồ xe 70 km/h ↔ app/GPS Z
+```
+
+App fit calibration profile từ các điểm này.
+
+### 44.3. Guided Calibration
+
+App hướng dẫn người dùng:
+
+1. chạy ở khu vực an toàn/phù hợp,
+2. giữ tốc độ ổn định,
+3. app lấy trung bình True/Fused Speed trong một khoảng thời gian,
+4. người dùng nhập tốc độ đang thấy trên đồng hồ xe,
+5. lặp lại ở nhiều mức tốc độ,
+6. app tính profile.
+
+Calibration không được yêu cầu người dùng thao tác phức tạp khi xe đang di chuyển; luồng UX cụ thể cần thiết kế theo hướng giảm tối đa tương tác trong lúc lái.
+
+### 44.4. Speed Calibration Profile
+
+Mỗi xe có thể có profile riêng.
+
+Ví dụ:
+
+```
+PCX125 2019
+Profile: Default tires
+Mode: Vehicle Sync
+Calibration: 30 / 50 / 70 km/h
+Quality: Good
+```
+
+Người dùng có thể:
+
+- tạo profile,
+- đổi profile,
+- recalibrate,
+- reset,
+- xem calibration points.
+
+### 44.5. Smoothing
+
+Speed Sync Engine cần tránh việc digital speed nhảy liên tục.
+
+Có thể kết hợp:
+
+- GNSS speed,
+- sensor acceleration,
+- smoothing/filter,
+- quality/confidence.
+
+Mục tiêu:
+
+- phản hồi đủ nhanh khi tăng/giảm tốc,
+- không rung số quá mức,
+- không tạo cảm giác trễ lớn,
+- không làm sai dữ liệu session vì smoothing presentation.
+
+---
+
+## 45. UI Direction đã chốt qua prototype
+
+Dashboard chính ưu tiên cảm giác như TFT/instrument cluster của xe.
+
+Các nguyên tắc hiện tại:
+
+- không chia thành nhiều card/block,
+- speed gauge là tâm điểm,
+- secondary gauges bao quanh,
+- SVG icon nhất quán,
+- số digital dùng phong cách segmented/LED cải tiến,
+- digital readout có vùng riêng, kim không được đè/chạy xuyên qua số,
+- Best/Current/Projected hiển thị trực quan,
+- Ghost chart có Adaptive Scale,
+- alert nằm như một dải trạng thái, không thành card lớn,
+- dashboard template có thể thay đổi trong kho mẫu.
+
+Hai style prototype hiện có được xem là hai template độc lập:
+
+- **TFT Sport Bike**
+- **Premium Segmented**
+
+Không có yêu cầu chọn một trong hai làm giao diện duy nhất.
+
+---
+
+## 46. Mục tiêu thảo luận tiếp theo
+
+Sau khi đã chốt khung UI/template và Speed Sync, các phần cần tiếp tục làm rõ gồm:
+
+1. công thức Driving Efficiency,
+2. realtime alert threshold/cooldown,
+3. thuật toán chọn Best Efficient Session,
+4. route matching và Ghost alignment,
+5. prediction confidence,
+6. guided calibration UX,
+7. schema cụ thể cho Dashboard Template.
