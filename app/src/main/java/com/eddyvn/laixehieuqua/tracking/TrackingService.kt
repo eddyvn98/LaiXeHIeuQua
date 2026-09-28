@@ -9,7 +9,8 @@ import android.location.Location
 import android.os.IBinder
 import androidx.core.app.*
 import androidx.core.content.ContextCompat
-import com.eddyvn.laixehieuqua.*
+import com.eddyvn.laixehieuqua.LaiXeApp
+import com.eddyvn.laixehieuqua.R
 import com.eddyvn.laixehieuqua.data.*
 import com.eddyvn.laixehieuqua.domain.DriveSnapshot
 import com.eddyvn.laixehieuqua.engine.*
