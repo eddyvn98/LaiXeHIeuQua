@@ -28,7 +28,8 @@ class TrackingService:Service(){
 
     private var sessionId:Long?=null
     private var previous:Location?=null
-    private var stopping=false
+    @Volatile private var stopping=false
+    private var startJob:Job?=null
 
     override fun onCreate(){
         super.onCreate()
@@ -49,7 +50,14 @@ class TrackingService:Service(){
     }
 
     private fun startTracking(){
-        if(app.graph.driveStateStore.state.value.tracking)return
+        val store=app.graph.driveStateStore
+        if(store.trackingStatus.value in setOf(
+                TrackingStatus.STARTING,
+                TrackingStatus.WAITING_FOR_GPS,
+                TrackingStatus.LIVE,
+                TrackingStatus.STOPPING,
+            ))return
+        store.setTrackingStatus(TrackingStatus.STARTING)
         stopping=false
         previous=null
 
@@ -68,41 +76,66 @@ class TrackingService:Service(){
                 Manifest.permission.ACCESS_FINE_LOCATION,
             )!=PackageManager.PERMISSION_GRANTED
         ){
+            store.setTrackingStatus(TrackingStatus.PERMISSION_REQUIRED)
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return
         }
 
-        scope.launch{
-            val dao=app.graph.database.dao()
-            val active=dao.activeSession()
-            val id=active?.id?:dao.insertSession(SessionEntity(startMs=System.currentTimeMillis()))
-            sessionId=id
+        startJob=scope.launch{
+            try{
+                val dao=app.graph.database.dao()
+                val active=dao.activeSession()
+                val id=active?.id?:dao.insertSession(SessionEntity(startMs=System.currentTimeMillis()))
+                sessionId=id
 
-            val baseTotalDistanceM=dao.totalTrackedDistanceM()
-            val sessionBaseDistanceM=dao.sessionDistanceM(id)
-            pipeline.reset(
-                sessionDistanceM=sessionBaseDistanceM,
-                totalDistanceM=baseTotalDistanceM,
-            )
+                val baseTotalDistanceM=dao.totalTrackedDistanceM()
+                val sessionBaseDistanceM=dao.sessionDistanceM(id)
+                pipeline.reset(
+                    sessionDistanceM=sessionBaseDistanceM,
+                    totalDistanceM=baseTotalDistanceM,
+                )
 
-            val request=LocationRequest.Builder(
-                Priority.PRIORITY_HIGH_ACCURACY,
-                1_000L,
-            )
-                .setMinUpdateIntervalMillis(500L)
-                .build()
+                val request=LocationRequest.Builder(
+                    Priority.PRIORITY_HIGH_ACCURACY,
+                    1_000L,
+                )
+                    .setMinUpdateIntervalMillis(500L)
+                    .build()
 
-            withContext(Dispatchers.Main.immediate){
-                fused.requestLocationUpdates(request,callback,mainLooper)
+                if(stopping)return@launch
+                store.setTrackingStatus(TrackingStatus.WAITING_FOR_GPS)
+                withContext(Dispatchers.Main.immediate){
+                    if(!stopping){
+                        fused.requestLocationUpdates(request,callback,mainLooper)
+                            .addOnFailureListener{failStart()}
+                    }
+                }
+            }catch(cancelled:CancellationException){
+                throw cancelled
+            }catch(_:Exception){
+                failStart()
             }
         }
     }
 
     private val callback=object:LocationCallback(){
         override fun onLocationResult(result:LocationResult){
+            if(stopping)return
+            if(result.locations.isNotEmpty()){
+                app.graph.driveStateStore.setTrackingStatus(TrackingStatus.LIVE)
+            }
             result.locations.forEach(::consume)
         }
+    }
+
+    private fun failStart(){
+        if(stopping)return
+        app.graph.driveStateStore.setTrackingStatus(TrackingStatus.ERROR)
+        fused.removeLocationUpdates(callback)
+        sensors.stop()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 
     private fun consume(location:Location){
@@ -152,9 +185,10 @@ class TrackingService:Service(){
         stopping=true
         fused.removeLocationUpdates(callback)
         sensors.stop()
-        val id=sessionId
 
         scope.launch{
+            startJob?.join()
+            val id=sessionId
             if(id!=null){
                 val dao=app.graph.database.dao()
                 dao.closeSession(

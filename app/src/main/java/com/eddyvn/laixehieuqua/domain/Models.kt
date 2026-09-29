@@ -36,6 +36,7 @@ data class FuelSummary(
     val currentCycleKm:Double=0.0,
     val bestCycle:FuelCycle?=null,
     val latestFullTimestampMs:Long?=null,
+    val cycles:List<FuelCycle> = emptyList(),
 )
 
 data class EconomyProjection(

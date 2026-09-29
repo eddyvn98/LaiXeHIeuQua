@@ -4,18 +4,23 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 import com.composables.icons.tabler.Tabler
 import com.composables.icons.tabler.outline.*
+import com.eddyvn.laixehieuqua.ui.components.DriveAmbientBackground
 
 private data class NavItem(val route:String,val label:String,val icon:ImageVector)
 
@@ -24,10 +29,12 @@ fun AppRoot(vm:MainViewModel=viewModel()){
     val nav=rememberNavController()
     val context=LocalContext.current
     val drive by vm.drive.collectAsStateWithLifecycle()
+    val trackingStatus by vm.trackingStatus.collectAsStateWithLifecycle()
     val reference by vm.reference.collectAsStateWithLifecycle()
     val templates by vm.templates.collectAsStateWithLifecycle()
     val fuel by vm.fuelEntries.collectAsStateWithLifecycle()
     val summary by vm.fuelSummary.collectAsStateWithLifecycle()
+    val fuelMarketPrice by vm.fuelMarketPrice.collectAsStateWithLifecycle()
     val projection by vm.projection.collectAsStateWithLifecycle()
     val simulation by vm.simulation.collectAsStateWithLifecycle()
     val selected=templates.firstOrNull{it.selected}
@@ -35,7 +42,7 @@ fun AppRoot(vm:MainViewModel=viewModel()){
     val permissionLauncher=rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ){result->
-        if(result[Manifest.permission.ACCESS_FINE_LOCATION]==true)vm.startTracking()
+        vm.onLocationPermissionResult(result[Manifest.permission.ACCESS_FINE_LOCATION]==true)
     }
 
     fun startWithPermission(){
@@ -47,6 +54,7 @@ fun AppRoot(vm:MainViewModel=viewModel()){
         ){
             vm.startTracking()
         }else{
+            vm.requestLocationPermission()
             permissionLauncher.launch(
                 arrayOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -65,24 +73,18 @@ fun AppRoot(vm:MainViewModel=viewModel()){
         NavItem("simulation","Sim",Tabler.Outline.Gauge),
     )
 
-    Scaffold(bottomBar={
-        NavigationBar{
-            val current=nav.currentBackStackEntryAsState().value?.destination?.route
-            items.forEach{item->
-                NavigationBarItem(
-                    selected=current==item.route,
-                    onClick={
-                        nav.navigate(item.route){
-                            launchSingleTop=true
-                            restoreState=true
-                        }
-                    },
-                    icon={Icon(item.icon,null)},
-                    label={Text(item.label)},
-                )
-            }
-        }
-    }){paddingValues->
+    val current=nav.currentBackStackEntryAsState().value?.destination?.route
+    var menuExpanded by remember{mutableStateOf(false)}
+    Box(Modifier.fillMaxSize().background(Color(0xFF030508))){
+    if(current==null||current=="drive"){
+        DriveAmbientBackground(
+            speedKmh=drive.displaySpeedKmh,
+            accelerationMs2=drive.accelerationMs2,
+            modifier=Modifier.fillMaxSize(),
+        )
+    }
+    Box(Modifier.fillMaxSize()){
+    Scaffold(containerColor=Color.Transparent,contentColor=Color.White){paddingValues->
         NavHost(
             nav,
             startDestination="drive",
@@ -94,12 +96,21 @@ fun AppRoot(vm:MainViewModel=viewModel()){
                     reference,
                     summary,
                     projection,
+                    trackingStatus,
                     selected,
                     ::startWithPermission,
                     vm::stopTracking,
                 )
             }
-            composable("fuel"){FuelScreen(fuel,vm::addFuel)}
+            composable("fuel"){
+                FuelScreen(
+                    entries=fuel,
+                    summary=summary,
+                    marketPrice=fuelMarketPrice,
+                    onRefreshPrice=vm::refreshFuelMarketPrice,
+                    onAdd=vm::addFuel,
+                )
+            }
             composable("garage"){
                 TemplateGarageScreen(
                     templates,
@@ -121,5 +132,39 @@ fun AppRoot(vm:MainViewModel=viewModel()){
                 )
             }
         }
+    }
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(end=4.dp),
+            contentAlignment=Alignment.TopEnd,
+        ){
+            Box{
+                IconButton(onClick={menuExpanded=true},modifier=Modifier.size(48.dp)){
+                    Icon(Tabler.Outline.Settings,"Mở menu tab",modifier=Modifier.size(22.dp),tint=Color.White)
+                }
+                DropdownMenu(
+                    expanded=menuExpanded,
+                    onDismissRequest={menuExpanded=false},
+                ){
+                    items.forEach{item->
+                        DropdownMenuItem(
+                            text={Text(item.label)},
+                            leadingIcon={Icon(item.icon,null)},
+                            trailingIcon=if(current==item.route)({Text("✓")})else null,
+                            onClick={
+                                menuExpanded=false
+                                nav.navigate(item.route){
+                                    launchSingleTop=true
+                                    restoreState=true
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
     }
 }

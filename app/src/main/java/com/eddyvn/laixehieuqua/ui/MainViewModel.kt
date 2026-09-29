@@ -6,11 +6,14 @@ import androidx.lifecycle.viewModelScope
 import com.eddyvn.laixehieuqua.LaiXeApp
 import com.eddyvn.laixehieuqua.camera.CalibrationSampleCollector
 import com.eddyvn.laixehieuqua.data.DashboardTemplateEntity
+import com.eddyvn.laixehieuqua.data.FuelMarketPriceState
 import com.eddyvn.laixehieuqua.domain.*
 import com.eddyvn.laixehieuqua.engine.EconomyProjectionEngine
 import com.eddyvn.laixehieuqua.simulation.*
 import com.eddyvn.laixehieuqua.tracking.TrackingService
+import com.eddyvn.laixehieuqua.tracking.TrackingStatus
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -20,6 +23,7 @@ class MainViewModel(application:Application):AndroidViewModel(application){
     private val projectionEngine=EconomyProjectionEngine()
 
     val drive=graph.driveStateStore.state
+    val trackingStatus=graph.driveStateStore.trackingStatus
     val reference=graph.economyReferenceStore.state
     val calibration=graph.calibrationStore.state
     val simulation=graph.simulationController.state
@@ -38,6 +42,11 @@ class MainViewModel(application:Application):AndroidViewModel(application){
         SharingStarted.WhileSubscribed(5_000),
         FuelSummary(),
     )
+    private val _fuelMarketPrice=MutableStateFlow(
+        FuelMarketPriceState(price=graph.fuelMarketPriceRepository.cached())
+    )
+    val fuelMarketPrice:StateFlow<FuelMarketPriceState> = _fuelMarketPrice
+    private var lastFuelPriceRefreshMs=0L
     val projection=combine(drive,fuelSummary){snapshot,summary->
         projectionEngine.project(snapshot,summary)
     }.stateIn(viewModelScope,SharingStarted.WhileSubscribed(5_000),null)
@@ -52,14 +61,26 @@ class MainViewModel(application:Application):AndroidViewModel(application){
         TrackingService.start(getApplication())
     }
 
+    fun requestLocationPermission(){
+        graph.driveStateStore.setTrackingStatus(TrackingStatus.REQUESTING_PERMISSION)
+    }
+
+    fun onLocationPermissionResult(granted:Boolean){
+        if(granted)startTracking()
+        else graph.driveStateStore.setTrackingStatus(TrackingStatus.PERMISSION_REQUIRED)
+    }
+
     fun stopTracking(){
         if(simulation.value.active)graph.simulationController.stop()
-        else TrackingService.stop(getApplication())
+        else {
+            graph.driveStateStore.setTrackingStatus(TrackingStatus.STOPPING)
+            TrackingService.stop(getApplication())
+        }
     }
 
     fun startSimulation(scenario:SimulationScenario,speedMultiplier:Int){
         viewModelScope.launch{
-            if(drive.value.tracking&&!simulation.value.active){
+            if(trackingStatus.value!=TrackingStatus.IDLE&&!simulation.value.active){
                 TrackingService.stop(getApplication())
                 delay(600)
             }
@@ -73,7 +94,7 @@ class MainViewModel(application:Application):AndroidViewModel(application){
 
     fun replayLastRide(speedMultiplier:Int){
         viewModelScope.launch{
-            if(drive.value.tracking&&!simulation.value.active){
+            if(trackingStatus.value!=TrackingStatus.IDLE&&!simulation.value.active){
                 TrackingService.stop(getApplication())
                 delay(600)
             }
@@ -103,6 +124,25 @@ class MainViewModel(application:Application):AndroidViewModel(application){
     fun addFuel(liters:Double,totalPrice:Double?,full:Boolean,odometer:Double?){
         viewModelScope.launch{
             graph.fuelRepository.addEntry(liters,totalPrice,full,odometer)
+        }
+    }
+
+    fun refreshFuelMarketPrice(force:Boolean=false){
+        val now=System.currentTimeMillis()
+        if(_fuelMarketPrice.value.loading||(!force&&now-lastFuelPriceRefreshMs<15*60*1000))return
+        lastFuelPriceRefreshMs=now
+        viewModelScope.launch{
+            _fuelMarketPrice.update{it.copy(loading=true,error=null)}
+            try{
+                val price=graph.fuelMarketPriceRepository.refresh()
+                _fuelMarketPrice.value=FuelMarketPriceState(price=price)
+            }catch(error:CancellationException){
+                throw error
+            }catch(error:Exception){
+                _fuelMarketPrice.update{
+                    it.copy(loading=false,error="Không tải được giá thị trường. Có thể nhập giá tại cây xăng.")
+                }
+            }
         }
     }
 
