@@ -36,5 +36,14 @@
 - [x] Gradle wrapper 9.6.0
 - [x] workflow_dispatch + wrapper-based CI
 - [x] known limitations / third-party docs
-- [ ] PR CI green
-- [ ] merge final checkpoint to main
+- [x] PR CI green
+- [x] merge final checkpoint to main
+
+### Next — physical-device validation
+- [ ] install debug APK on target Android phone
+- [ ] verify foreground tracking with screen off
+- [ ] validate GPS/fused speed on a real ride
+- [ ] validate speedometer OCR and automatic calibration
+- [ ] validate lean zeroing for the actual phone mount
+- [ ] run a 2-hour battery/thermal endurance session
+- [ ] record issues and tune thresholds from device data
