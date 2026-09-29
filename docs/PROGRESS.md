@@ -51,8 +51,8 @@
 - [x] replay latest completed ride from Room track points
 - [x] keep synthetic data out of real trip/fuel storage
 - [x] unit tests for simulator and shared pipeline
-- [ ] PR CI green
-- [ ] merge simulation checkpoint to main
+- [x] PR CI green
+- [x] merge simulation checkpoint to main
 
 ### Next — physical-device validation
 - [ ] install debug APK on target Android phone
