@@ -1,0 +1,10 @@
+package com.eddyvn.laixehieuqua.domain
+
+data class DriveInputSample(
+    val timestampMs:Long,
+    val rawGpsSpeedKmh:Double,
+    val gpsAccuracyM:Float,
+    val accelerationMs2:Double,
+    val leanDeg:Double,
+    val deltaDistanceM:Double,
+)
