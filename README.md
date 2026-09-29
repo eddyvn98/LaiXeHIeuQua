@@ -15,12 +15,12 @@ The app combines:
 - Best Economy Reference
 - camera-based synchronization with the real motorcycle speedometer
 - switchable sport-dashboard templates
+- simulation and recorded-ride replay before physical road testing
 
 See:
 - `docs/PRODUCT_SPEC_v0.1.md`
 - `docs/IMPLEMENTATION_PLAN.md`
 - `docs/PROGRESS.md`
-
 
 ## Build
 
@@ -44,6 +44,20 @@ app/build/outputs/apk/debug/app-debug.apk
 - **Fuel:** Full-to-Full entries, partial fills, odometer reconciliation, Best Economy Reference.
 - **Garage:** built-in and cloned dashboard templates.
 - **Sync:** CameraX + ML Kit reads the real speedometer and automatically builds a vehicle-speed calibration profile.
+- **Sim:** deterministic synthetic scenarios plus replay of the latest completed real ride through the same `DrivePipeline` used by live tracking.
+
+## Simulation Lab
+
+Built-in scenarios:
+- city stop/go traffic
+- clear-road cruising
+- acceleration and braking
+- GPS noise and dropout
+- lean/cornering
+- speedometer calibration plateaus
+- accelerated two-hour mixed ride
+
+Playback can run at 1x, 5x, 20x or 100x. Synthetic runs update the live dashboard state but do not write fake track points or fuel entries to the real database.
 
 ## Validation
 

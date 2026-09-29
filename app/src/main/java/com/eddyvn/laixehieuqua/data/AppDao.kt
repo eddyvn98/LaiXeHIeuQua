@@ -10,10 +10,16 @@ interface AppDao {
     @Query("SELECT * FROM sessions WHERE endMs IS NULL ORDER BY startMs DESC LIMIT 1")
     suspend fun activeSession():SessionEntity?
 
+    @Query("SELECT * FROM sessions WHERE endMs IS NOT NULL ORDER BY startMs DESC LIMIT 1")
+    suspend fun latestCompletedSession():SessionEntity?
+
     @Query("UPDATE sessions SET endMs=:endMs,distanceM=:distanceM,avgSpeedKmh=:avgSpeed,maxSpeedKmh=:maxSpeed,trackedComplete=:complete WHERE id=:id")
     suspend fun closeSession(id:Long,endMs:Long,distanceM:Double,avgSpeed:Double,maxSpeed:Double,complete:Boolean)
 
     @Insert suspend fun insertTrackPoint(point:TrackPointEntity)
+
+    @Query("SELECT * FROM track_points WHERE sessionId=:sessionId ORDER BY timestampMs ASC")
+    suspend fun trackPointsForSession(sessionId:Long):List<TrackPointEntity>
 
     @Query("SELECT COALESCE(SUM(deltaDistanceM),0) FROM track_points")
     suspend fun totalTrackedDistanceM():Double

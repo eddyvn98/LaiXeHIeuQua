@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.eddyvn.laixehieuqua.data.*
 import com.eddyvn.laixehieuqua.domain.CalibrationStore
 import com.eddyvn.laixehieuqua.domain.EconomyReferenceStore
+import com.eddyvn.laixehieuqua.simulation.SimulationController
 import com.eddyvn.laixehieuqua.tracking.DriveStateStore
 import kotlinx.coroutines.*
 
@@ -17,6 +18,11 @@ class AppGraph(context: Context) {
     val fuelRepository = FuelRepository(database.dao(), economyReferenceStore)
     val templateRepository = TemplateRepository(database.dao())
     val calibrationRepository = CalibrationRepository(database.dao(), calibrationStore)
+    val simulationController = SimulationController(
+        driveStateStore,
+        economyReferenceStore,
+        calibrationStore,
+    )
 
     fun initialize() {
         scope.launch {
