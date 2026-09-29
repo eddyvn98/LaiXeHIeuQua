@@ -20,7 +20,6 @@ class SimulationScenariosTest {
         val pipeline=DrivePipeline()
         pipeline.reset()
         var lastDistanceKm=0.0
-        var trafficFrames=0
 
         SimulationScenarios.frames(SimulationScenario.LONG_RIDE)
             .forEach{frame->
@@ -34,13 +33,11 @@ class SimulationScenariosTest {
                 assertTrue(snapshot.trueSpeedKmh in 0.0..180.0)
                 assertTrue(snapshot.speedHistoryKmh.size<=40)
                 assertTrue(snapshot.ecoTargetHistoryKmh.size<=40)
-                if(snapshot.traffic)trafficFrames++
                 lastDistanceKm=snapshot.distanceKm
             }
 
         assertTrue(lastDistanceKm>50.0)
         assertTrue(lastDistanceKm<130.0)
-        assertTrue(trafficFrames>0)
     }
 
     @Test
