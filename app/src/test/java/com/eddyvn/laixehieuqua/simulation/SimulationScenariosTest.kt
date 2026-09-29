@@ -1,7 +1,9 @@
 package com.eddyvn.laixehieuqua.simulation
 
+import com.eddyvn.laixehieuqua.camera.CalibrationSampleCollector
 import com.eddyvn.laixehieuqua.domain.DriveInputSample
 import com.eddyvn.laixehieuqua.engine.DrivePipeline
+import com.eddyvn.laixehieuqua.engine.SpeedCalibrationEngine
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -11,6 +13,31 @@ class SimulationScenariosTest {
         val frames=SimulationScenarios.frames(SimulationScenario.LONG_RIDE)
         assertEquals(7_201,frames.size)
         assertEquals(7_200_000L,frames.last().relativeTimeMs)
+    }
+
+    @Test
+    fun longRideRunsAllFramesThroughSharedPipeline(){
+        val pipeline=DrivePipeline()
+        pipeline.reset()
+        var lastDistanceKm=0.0
+
+        SimulationScenarios.frames(SimulationScenario.LONG_RIDE)
+            .forEach{frame->
+                val snapshot=pipeline.consume(
+                    sample=frame.toInput(),
+                    reference=null,
+                    activeCalibration=null,
+                )
+                assertTrue(snapshot.trueSpeedKmh.isFinite())
+                assertTrue(snapshot.distanceKm.isFinite())
+                assertTrue(snapshot.trueSpeedKmh in 0.0..180.0)
+                assertTrue(snapshot.speedHistoryKmh.size<=40)
+                assertTrue(snapshot.ecoTargetHistoryKmh.size<=40)
+                lastDistanceKm=snapshot.distanceKm
+            }
+
+        assertTrue(lastDistanceKm>50.0)
+        assertTrue(lastDistanceKm<130.0)
     }
 
     @Test
@@ -26,6 +53,35 @@ class SimulationScenariosTest {
         val frames=SimulationScenarios.frames(SimulationScenario.CALIBRATION)
         val values=frames.mapNotNull{it.simulatedOcrSpeedKmh}.distinct()
         assertEquals(listOf(32,53,74),values)
+    }
+
+    @Test
+    fun calibrationScenarioBuildsUsableCalibrationPoints(){
+        val pipeline=DrivePipeline()
+        val collector=CalibrationSampleCollector()
+        val calibrationEngine=SpeedCalibrationEngine()
+        val accepted=mutableListOf<com.eddyvn.laixehieuqua.domain.CalibrationPoint>()
+        pipeline.reset()
+
+        SimulationScenarios.frames(SimulationScenario.CALIBRATION)
+            .forEach{frame->
+                val snapshot=pipeline.consume(
+                    sample=frame.toInput(),
+                    reference=null,
+                    activeCalibration=null,
+                )
+                frame.simulatedOcrSpeedKmh?.let{ocr->
+                    collector.offer(
+                        timeMs=1_000_000L+frame.relativeTimeMs,
+                        trueSpeedKmh=snapshot.trueSpeedKmh,
+                        vehicleSpeedKmh=ocr.toDouble(),
+                    )?.let(accepted::add)
+                }
+            }
+
+        assertTrue(accepted.size>=3)
+        assertTrue(calibrationEngine.isMonotonic(accepted))
+        assertEquals(53.0,calibrationEngine.map(50.0,accepted),2.5)
     }
 
     @Test
