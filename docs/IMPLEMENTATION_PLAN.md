@@ -1,6 +1,6 @@
 # Implementation Plan
 
-**Status:** v0.1 implementation complete and merged to main; physical-device validation pending  
+**Status:** v0.1 implementation complete; simulation/replay validation harness in PR; physical-device validation follows  
 **Target:** Android 13+ APK, offline-first  
 **Principle:** Prefer stable libraries; custom code only for product-specific logic.
 
@@ -70,18 +70,25 @@
 - README and operational notes
 - known-limitations list
 
-## Next milestone — device validation
+### M7 — Simulation / replay
+- extract a shared DrivePipeline used by live and simulated inputs
+- deterministic scenario library
+- accelerated long-ride soak scenario
+- in-app Simulation Lab
+- replay latest completed real ride
+- simulator-specific unit tests
+- no synthetic persistence into real ride/fuel data
 
-The next pass is no longer feature scaffolding. It is validation on the target phone and motorcycle:
+## Validation sequence
 
-- install the CI-built debug APK
-- verify screen-off foreground tracking and session recovery
-- compare fused/app speed against the motorcycle cluster
-- run automatic CameraX + ML Kit speed calibration
-- validate lean baseline with the real mounting orientation
-- measure battery and thermal behavior over a 2-hour ride
-- log device-specific failures and tune thresholds from evidence
+1. Unit tests and APK build in CI.
+2. Run deterministic Simulation Lab scenarios.
+3. Run the two-hour scenario at accelerated playback.
+4. Install on the target phone.
+5. Record a short controlled real ride.
+6. Replay that ride repeatedly while tuning thresholds.
+7. Run the full two-hour physical battery/thermal/endurance test.
 
-## Definition of done for this implementation pass
+## Definition of done for the next pass
 
-The repository contains a coherent Android project with all major v0.1 flows represented in code, core engines covered by unit tests, CI configured to build/test, and the final checkpoint merged to `main`. Hardware behavior (GPS, sensors, OCR accuracy, 2-hour endurance) remains device-validation work and is documented explicitly rather than falsely claimed as verified.
+Simulation/replay is considered complete when PR CI is green and the branch merges to `main`. Hardware behavior (GPS, sensors, OCR accuracy, screen-off endurance, battery/thermal) remains physical-device validation and must not be inferred from simulation alone.
