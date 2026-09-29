@@ -39,6 +39,21 @@
 - [x] PR CI green
 - [x] merge final checkpoint to main
 
+### Checkpoint 5 — simulation / replay harness
+- [x] shared DrivePipeline for live and simulated inputs
+- [x] Simulation Lab inside the app
+- [x] city / clear-road / accel-brake scenarios
+- [x] GPS noise and dropout scenario
+- [x] lean/cornering scenario
+- [x] calibration OCR plateau scenario
+- [x] accelerated 2-hour mixed scenario
+- [x] 1x / 5x / 20x / 100x playback
+- [x] replay latest completed ride from Room track points
+- [x] keep synthetic data out of real trip/fuel storage
+- [x] unit tests for simulator and shared pipeline
+- [ ] PR CI green
+- [ ] merge simulation checkpoint to main
+
 ### Next — physical-device validation
 - [ ] install debug APK on target Android phone
 - [ ] verify foreground tracking with screen off
@@ -46,4 +61,4 @@
 - [ ] validate speedometer OCR and automatic calibration
 - [ ] validate lean zeroing for the actual phone mount
 - [ ] run a 2-hour battery/thermal endurance session
-- [ ] record issues and tune thresholds from device data
+- [ ] replay recorded failures and tune thresholds from evidence
