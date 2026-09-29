@@ -1,6 +1,6 @@
 # Implementation Plan
 
-**Status:** v0.1 implementation complete; simulation/replay validation harness in PR; physical-device validation follows  
+**Status:** v0.1 implementation + simulation/replay harness merged to main; physical-device validation follows  
 **Target:** Android 13+ APK, offline-first  
 **Principle:** Prefer stable libraries; custom code only for product-specific logic.
 
@@ -91,4 +91,4 @@
 
 ## Definition of done for the next pass
 
-Simulation/replay is considered complete when PR CI is green and the branch merges to `main`. Hardware behavior (GPS, sensors, OCR accuracy, screen-off endurance, battery/thermal) remains physical-device validation and must not be inferred from simulation alone.
+Simulation/replay is complete: PR CI passed and the harness is merged to `main`. Hardware behavior (GPS, sensors, OCR accuracy, screen-off endurance, battery/thermal) remains physical-device validation and must not be inferred from simulation alone.
