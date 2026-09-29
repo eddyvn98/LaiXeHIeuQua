@@ -80,7 +80,7 @@ object SimulationScenarios {
 
     private fun leaning():List<SimulationFrame>{
         val speeds=List(181){38.0+listOf(-0.5,0.0,0.4)[it%3]}
-        return framesFromSpeeds(speeds){index,->
+        return framesFromSpeeds(speeds){index,_->
             val lean=when(index%60){
                 in 10..22 -> -28.0*sin((index%60-10)/12.0)
                 in 35..47 -> 30.0*sin((index%60-35)/12.0)
