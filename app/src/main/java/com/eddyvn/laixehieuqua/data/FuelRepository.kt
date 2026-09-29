@@ -25,6 +25,7 @@ class FuelRepository(private val dao:AppDao,private val store:EconomyReferenceSt
             currentCycleKm=currentKm,
             bestCycle=best,
             latestFullTimestampMs=latestFull?.timestampMs,
+            cycles=cycles,
         )
     }.distinctUntilChanged()
 

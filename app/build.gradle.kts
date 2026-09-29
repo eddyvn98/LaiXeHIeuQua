@@ -51,4 +51,6 @@ dependencies {
     implementation("com.patrykandpatrick.vico:compose-m3:3.2.3")
     implementation("com.composables:icons-tabler-outline-cmp:2.2.1")
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }

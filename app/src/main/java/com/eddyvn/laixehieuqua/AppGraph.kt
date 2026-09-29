@@ -16,6 +16,7 @@ class AppGraph(context: Context) {
     val economyReferenceStore = EconomyReferenceStore()
     val calibrationStore = CalibrationStore()
     val fuelRepository = FuelRepository(database.dao(), economyReferenceStore)
+    val fuelMarketPriceRepository = FuelMarketPriceRepository(context)
     val templateRepository = TemplateRepository(database.dao())
     val calibrationRepository = CalibrationRepository(database.dao(), calibrationStore)
     val simulationController = SimulationController(
