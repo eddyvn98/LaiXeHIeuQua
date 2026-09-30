@@ -21,6 +21,11 @@ class CalibrationRepository(private val dao:AppDao,private val store:Calibration
         dao.insertCalibrationPoint(CalibrationPointEntity(profileId=id,trueSpeedKmh=trueSpeedKmh,vehicleSpeedKmh=vehicleSpeedKmh,timestampMs=System.currentTimeMillis()))
         refreshActiveProfile();return true
     }
+    suspend fun reset(){
+        dao.clearCalibrationPoints()
+        dao.clearCalibrationProfiles()
+        store.set(null)
+    }
     suspend fun refreshActiveProfile(){
         val p=dao.activeCalibrationProfile()
         if(p==null){store.set(null);return}
