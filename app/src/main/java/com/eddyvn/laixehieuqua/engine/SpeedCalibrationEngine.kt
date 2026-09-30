@@ -33,9 +33,6 @@ class SpeedCalibrationEngine{
         return (trueSpeedKmh+correction).coerceAtLeast(0.0)
     }
 
-    fun isMonotonic(points:List<CalibrationPoint>):Boolean{
-        val sorted=points.sortedBy{it.trueSpeedKmh}
-        if(sorted.zipWithNext().any{(a,b)->b.trueSpeedKmh-a.trueSpeedKmh<3.0})return false
-        return sorted.zipWithNext().all{(a,b)->b.vehicleSpeedKmh>=a.vehicleSpeedKmh}
-    }
+    fun isMonotonic(points:List<CalibrationPoint>)=
+        points.sortedBy{it.trueSpeedKmh}.zipWithNext().all{(a,b)->b.vehicleSpeedKmh>=a.vehicleSpeedKmh}
 }
