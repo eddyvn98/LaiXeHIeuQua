@@ -109,7 +109,7 @@ fun AdaptivePositiveGauge(
         GaugeText(
             value="%.0f".format(animatedValue),
             label="$label $unit",
-            scale="0–\${scale.roundToInt()}",
+            scale="0–${scale.roundToInt()}",
             color=liveColor,
         )
     }
@@ -148,7 +148,7 @@ fun AdaptiveAccelerationGauge(
         GaugeText(
             value="%+.1f".format(animatedValue),
             label="ACCEL m/s²",
-            scale="±\${scale.roundToInt()}",
+            scale="±${scale.roundToInt()}",
             color=liveColor,
         )
     }
