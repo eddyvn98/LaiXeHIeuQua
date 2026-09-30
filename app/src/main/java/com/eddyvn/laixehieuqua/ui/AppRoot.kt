@@ -37,6 +37,7 @@ fun AppRoot(vm:MainViewModel=viewModel()){
     val fuelMarketPrice by vm.fuelMarketPrice.collectAsStateWithLifecycle()
     val projection by vm.projection.collectAsStateWithLifecycle()
     val simulation by vm.simulation.collectAsStateWithLifecycle()
+    val vehicleOdometerKm by vm.vehicleOdometerKm.collectAsStateWithLifecycle()
     val selected=templates.firstOrNull{it.selected}
 
     val permissionLauncher=rememberLauncherForActivityResult(
@@ -69,7 +70,7 @@ fun AppRoot(vm:MainViewModel=viewModel()){
         NavItem("drive","Drive",Tabler.Outline.Gauge),
         NavItem("fuel","Fuel",Tabler.Outline.GasStation),
         NavItem("garage","Garage",Tabler.Outline.Palette),
-        NavItem("calibration","Sync",Tabler.Outline.Camera),
+        NavItem("calibration","Setup",Tabler.Outline.Camera),
         NavItem("simulation","Sim",Tabler.Outline.Gauge),
     )
 
@@ -98,6 +99,7 @@ fun AppRoot(vm:MainViewModel=viewModel()){
                     projection,
                     trackingStatus,
                     selected,
+                    vehicleOdometerKm,
                     ::startWithPermission,
                     vm::stopTracking,
                 )
