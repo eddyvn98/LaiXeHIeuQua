@@ -21,6 +21,7 @@ fun DashboardScreen(
     projection:EconomyProjection?,
     trackingStatus:TrackingStatus,
     template:DashboardTemplateEntity?,
+    vehicleOdometerKm:Double?,
     onStart:()->Unit,
     onStop:()->Unit,
 ){
@@ -63,6 +64,7 @@ fun DashboardScreen(
                 projection=projection,
                 trackingStatus=trackingStatus,
                 template=template,
+                vehicleOdometerKm=vehicleOdometerKm,
                 statusLabel=statusLabel,
                 gaugeActionLabel=gaugeActionLabel,
                 gaugeActionEnabled=gaugeClickEnabled,
@@ -94,8 +96,13 @@ fun DashboardScreen(
         )
 
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
-            NeedleGauge(drive.accelerationMs2,0.0..4.0,"m/s²",accent,Modifier.size(130.dp))
+            NeedleGauge(drive.trueSpeedKmh,0.0..120.0,"GPS km/h",secondary,Modifier.size(130.dp))
             NeedleGauge(abs(drive.leanDeg),0.0..50.0,"LEAN °",secondary,Modifier.size(130.dp))
+        }
+        Row(Modifier.fillMaxWidth().padding(top=4.dp),horizontalArrangement=Arrangement.SpaceEvenly){
+            InstrumentMetric(vehicleOdometerKm,"ODO")
+            InstrumentMetric(drive.distanceKm,"TRIP")
+            InstrumentMetric(drive.accelerationMs2,"ACCEL",unit="m/s²")
         }
 
         if(drive.traffic){
@@ -146,6 +153,7 @@ private fun LandscapeDashboardContent(
     projection:EconomyProjection?,
     trackingStatus:TrackingStatus,
     template:DashboardTemplateEntity?,
+    vehicleOdometerKm:Double?,
     statusLabel:String,
     gaugeActionLabel:String,
     gaugeActionEnabled:Boolean,
@@ -185,8 +193,12 @@ private fun LandscapeDashboardContent(
                 horizontalAlignment=Alignment.CenterHorizontally,
             ){
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
-                    NeedleGauge(drive.accelerationMs2,0.0..4.0,"m/s²",accent,Modifier.size(dialSize))
+                    NeedleGauge(drive.trueSpeedKmh,0.0..120.0,"GPS km/h",secondary,Modifier.size(dialSize))
                     NeedleGauge(abs(drive.leanDeg),0.0..50.0,"LEAN °",secondary,Modifier.size(dialSize))
+                }
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
+                    InstrumentMetric(vehicleOdometerKm,"ODO")
+                    InstrumentMetric(drive.distanceKm,"TRIP")
                 }
                 if(drive.traffic){
                     Text("STOP/GO",color=Color(0xFFFFD166),fontWeight=FontWeight.Bold,fontSize=12.sp)
@@ -229,5 +241,14 @@ private fun Metric(value:Double,label:String){
     Column(horizontalAlignment=Alignment.CenterHorizontally){
         Text(if(value>0)"%.1f".format(value) else "—",fontSize=18.sp,fontWeight=FontWeight.Bold)
         Text(label+" KM",fontSize=8.sp,color=Color(0xFF6F8192),letterSpacing=1.sp)
+    }
+}
+
+
+@Composable
+private fun InstrumentMetric(value:Double?,label:String,unit:String="km"){
+    Column(horizontalAlignment=Alignment.CenterHorizontally){
+        Text(value?.let{"%.1f".format(it)}?:"—",fontSize=17.sp,fontWeight=FontWeight.Bold)
+        Text(label+" "+unit,fontSize=8.sp,color=Color(0xFF6F8192),letterSpacing=.7.sp)
     }
 }

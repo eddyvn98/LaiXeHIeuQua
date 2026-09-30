@@ -17,9 +17,15 @@ class CalibrationRepository(private val dao:AppDao,private val store:Calibration
     suspend fun addPoint(trueSpeedKmh:Double,vehicleSpeedKmh:Double):Boolean{
         val id=ensureProfile()
         val current=dao.calibrationPoints(id).map{CalibrationPoint(it.trueSpeedKmh,it.vehicleSpeedKmh)}
+        if(current.any{kotlin.math.abs(it.trueSpeedKmh-trueSpeedKmh)<3.0})return false
         if(!engine.isMonotonic(current+CalibrationPoint(trueSpeedKmh,vehicleSpeedKmh)))return false
         dao.insertCalibrationPoint(CalibrationPointEntity(profileId=id,trueSpeedKmh=trueSpeedKmh,vehicleSpeedKmh=vehicleSpeedKmh,timestampMs=System.currentTimeMillis()))
         refreshActiveProfile();return true
+    }
+    suspend fun reset(){
+        dao.clearCalibrationPoints()
+        dao.clearCalibrationProfiles()
+        store.set(null)
     }
     suspend fun refreshActiveProfile(){
         val p=dao.activeCalibrationProfile()

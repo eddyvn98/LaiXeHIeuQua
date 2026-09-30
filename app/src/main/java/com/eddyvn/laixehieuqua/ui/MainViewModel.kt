@@ -26,6 +26,13 @@ class MainViewModel(application:Application):AndroidViewModel(application){
     val trackingStatus=graph.driveStateStore.trackingStatus
     val reference=graph.economyReferenceStore.state
     val calibration=graph.calibrationStore.state
+    val vehicleInstrument=graph.vehicleInstrumentStore.state
+    val totalTrackedDistanceKm=graph.database.dao().totalTrackedDistanceFlow()
+        .map{it/1000.0}
+        .stateIn(viewModelScope,SharingStarted.WhileSubscribed(5_000),0.0)
+    val vehicleOdometerKm=combine(vehicleInstrument,totalTrackedDistanceKm){instrument,total->
+        instrument.odometerBaseKm?.plus((total-instrument.trackedDistanceBaseKm).coerceAtLeast(0.0))
+    }.stateIn(viewModelScope,SharingStarted.WhileSubscribed(5_000),null)
     val simulation=graph.simulationController.state
     val templates=graph.templateRepository.templates.stateIn(
         viewModelScope,
@@ -159,6 +166,7 @@ class MainViewModel(application:Application):AndroidViewModel(application){
     }
 
     fun onOcrSpeed(vehicleSpeed:Int){
+        if(vehicleInstrument.value.setupComplete)return
         _lastOcr.value=vehicleSpeed
         val point=collector.offer(
             System.currentTimeMillis(),
@@ -180,6 +188,30 @@ class MainViewModel(application:Application):AndroidViewModel(application){
                     point.vehicleSpeedKmh,
                 )
             else "Skipped non-monotonic sample"
+        }
+    }
+
+    fun completeVehicleSetup(odometerKm:Double){
+        if(odometerKm<0.0)return
+        viewModelScope.launch{
+            val total=graph.database.dao().totalTrackedDistanceM()/1000.0
+            graph.vehicleInstrumentStore.completeSetup(odometerKm,total)
+            _calibrationStatus.value="Setup complete · camera is no longer needed"
+        }
+    }
+
+    fun resetVehicleSetup(){
+        graph.vehicleInstrumentStore.reset()
+        viewModelScope.launch{graph.calibrationRepository.reset()}
+        _lastOcr.value=null
+        _calibrationStatus.value="Point the camera at the speedometer"
+    }
+
+    fun clearCalibrationSamples(){
+        viewModelScope.launch{
+            graph.calibrationRepository.reset()
+            _lastOcr.value=null
+            _calibrationStatus.value="Old samples cleared · collect fresh speed samples"
         }
     }
 }

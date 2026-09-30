@@ -65,4 +65,6 @@ interface AppDao {
     @Insert suspend fun insertCalibrationPoint(point:CalibrationPointEntity)
     @Query("SELECT * FROM calibration_points WHERE profileId=:profileId ORDER BY trueSpeedKmh ASC")
     suspend fun calibrationPoints(profileId:String):List<CalibrationPointEntity>
+    @Query("DELETE FROM calibration_points") suspend fun clearCalibrationPoints()
+    @Query("DELETE FROM calibration_profiles") suspend fun clearCalibrationProfiles()
 }
