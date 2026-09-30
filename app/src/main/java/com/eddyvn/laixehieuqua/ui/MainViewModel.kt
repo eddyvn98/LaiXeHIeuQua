@@ -202,6 +202,16 @@ class MainViewModel(application:Application):AndroidViewModel(application){
 
     fun resetVehicleSetup(){
         graph.vehicleInstrumentStore.reset()
+        viewModelScope.launch{graph.calibrationRepository.reset()}
+        _lastOcr.value=null
         _calibrationStatus.value="Point the camera at the speedometer"
+    }
+
+    fun clearCalibrationSamples(){
+        viewModelScope.launch{
+            graph.calibrationRepository.reset()
+            _lastOcr.value=null
+            _calibrationStatus.value="Old samples cleared · collect fresh speed samples"
+        }
     }
 }
