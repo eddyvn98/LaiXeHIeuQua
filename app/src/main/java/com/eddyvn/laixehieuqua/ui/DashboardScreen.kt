@@ -114,7 +114,7 @@ fun DashboardScreen(
                 secondary=secondary,
                 modifier=Modifier.weight(1f).aspectRatio(1f),
             )
-            LeanAngleGauge(
+            SlopeGauge(
                 value=drive.leanDeg,
                 accent=accent,
                 secondary=secondary,
@@ -231,7 +231,7 @@ private fun LandscapeDashboardContent(
                         secondary=secondary,
                         modifier=Modifier.weight(1f).aspectRatio(1f),
                     )
-                    LeanAngleGauge(
+                    SlopeGauge(
                         value=drive.leanDeg,
                         accent=accent,
                         secondary=secondary,
