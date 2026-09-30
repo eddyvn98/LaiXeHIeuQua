@@ -156,55 +156,97 @@ fun AdaptiveAccelerationGauge(
 }
 
 @Composable
-fun LeanAngleGauge(
+fun SlopeGauge(
     value:Double,
     accent:Color,
     secondary:Color,
     modifier:Modifier=Modifier,
 ){
-    val scale=rememberExpandingScale(abs(value).toFloat(),30f,listOf(30f,45f,60f))
+    val scale=rememberExpandingScale(abs(value).toFloat(),15f,listOf(15f,20f,30f,45f))
     val animatedValue by animateFloatAsState(
         targetValue=value.toFloat(),
         animationSpec=spring(dampingRatio=Spring.DampingRatioNoBouncy,stiffness=Spring.StiffnessLow),
-        label="lean-angle-gauge",
+        label="slope-gauge",
     )
     val normalized=(animatedValue/scale).coerceIn(-1f,1f)
     val severity=abs(normalized)
     val liveColor=gaugeColor(severity,accent,secondary)
-    val zeroAngle=270f
-    val needleAngle=zeroAngle+135f*normalized
     val direction=when{
-        animatedValue < -1f -> "L"
-        animatedValue > 1f -> "R"
-        else -> "CENTER"
+        animatedValue > .7f -> "UP"
+        animatedValue < -.7f -> "DOWN"
+        else -> "LEVEL"
     }
 
     Box(modifier,contentAlignment=Alignment.Center){
         Canvas(Modifier.fillMaxSize()){
-            val r=size.minDimension*.40f
-            val c=Offset(size.width/2,size.height/2)
-            val box=androidx.compose.ui.geometry.Size(2*r,2*r)
-            val top=Offset(c.x-r,c.y-r)
-            drawArc(Color(0xFF17212C),135f,270f,false,top,box,style=Stroke(7.dp.toPx(),cap=StrokeCap.Round))
-            drawSignedArc(top,box,needleAngle,zeroAngle,liveColor,5.dp.toPx())
-            drawNeedle(c,r,needleAngle,liveColor,3.5.dp.toPx())
-            drawNeedle(c,r,zeroAngle,Color(0xFF546474),1.2.dp.toPx(),length=.58f)
-            rotate(animatedValue,pivot=c){
-                drawLine(
+            val pivot=Offset(size.width*.18f,size.height*.47f)
+            val armLength=size.width*.64f
+            val referenceEnd=Offset(pivot.x+armLength,pivot.y)
+
+            drawLine(
+                Color(0xFF33424F),
+                pivot,
+                referenceEnd,
+                2.dp.toPx(),
+                StrokeCap.Round,
+            )
+
+            val displayAngle=-animatedValue.coerceIn(-scale,scale)
+            val arcRadius=size.minDimension*.24f
+            val arcTop=Offset(pivot.x-arcRadius,pivot.y-arcRadius)
+            val arcBox=androidx.compose.ui.geometry.Size(arcRadius*2,arcRadius*2)
+            if(abs(displayAngle)>.2f){
+                drawArc(
                     liveColor,
-                    Offset(c.x-r*.48f,c.y),
-                    Offset(c.x+r*.48f,c.y),
-                    3.dp.toPx(),
-                    StrokeCap.Round,
+                    if(displayAngle<0f)displayAngle else 0f,
+                    abs(displayAngle),
+                    false,
+                    arcTop,
+                    arcBox,
+                    style=Stroke(4.dp.toPx(),cap=StrokeCap.Round),
                 )
             }
+
+            val angleRad=Math.toRadians(displayAngle.toDouble())
+            val movingEnd=Offset(
+                pivot.x+armLength*cos(angleRad).toFloat(),
+                pivot.y+armLength*sin(angleRad).toFloat(),
+            )
+            drawLine(liveColor,pivot,movingEnd,5.dp.toPx(),StrokeCap.Round)
+            drawCircle(Color(0xFF0A0F14),8.dp.toPx(),pivot)
+            drawCircle(liveColor,5.dp.toPx(),pivot)
+
+            val normalAngle=angleRad-Math.PI/2
+            val nose=8.dp.toPx()
+            drawLine(
+                liveColor,
+                movingEnd,
+                Offset(
+                    movingEnd.x+nose*cos(normalAngle).toFloat(),
+                    movingEnd.y+nose*sin(normalAngle).toFloat(),
+                ),
+                3.dp.toPx(),
+                StrokeCap.Round,
+            )
         }
-        GaugeText(
-            value="$direction \${abs(animatedValue).roundToInt()}°",
-            label="LEAN",
-            scale="±\${scale.roundToInt()}°",
-            color=liveColor,
-        )
+
+        Column(
+            horizontalAlignment=Alignment.CenterHorizontally,
+            modifier=Modifier.offset(y=30.dp),
+        ){
+            Text(
+                if(direction=="LEVEL")"LEVEL 0°" else "$direction ${abs(animatedValue).roundToInt()}°",
+                fontSize=14.sp,
+                fontWeight=FontWeight.Bold,
+                color=liveColor,
+            )
+            Text(
+                "SLOPE ±${scale.roundToInt()}°",
+                fontSize=7.sp,
+                fontWeight=FontWeight.Bold,
+                color=liveColor.copy(alpha=.88f),
+            )
+        }
     }
 }
 
