@@ -86,6 +86,7 @@ fun CalibrationScreen(vm:MainViewModel){
         }
         Text("Mẫu đã học: "+(calibration?.points?.size?:0),modifier=Modifier.padding(top=6.dp))
         Text(status,modifier=Modifier.padding(top=4.dp))
+        TextButton(onClick=vm::clearCalibrationSamples){Text("XÓA MẪU CŨ / LÀM LẠI")}
 
         OutlinedTextField(
             value=odometerText,
