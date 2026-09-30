@@ -9,12 +9,12 @@ class SensorCollector(private val manager:SensorManager):SensorEventListener{
     @Volatile var leanDeg=0.0
         private set
 
-    private val baselineRolls=ArrayDeque<Double>()
-    private var rollBaselineDeg:Double?=null
+    private val baselinePitches=ArrayDeque<Double>()
+    private var pitchBaselineDeg:Double?=null
 
     fun start(){
-        baselineRolls.clear()
-        rollBaselineDeg=null
+        baselinePitches.clear()
+        pitchBaselineDeg=null
         leanDeg=0.0
         manager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)?.let{
             manager.registerListener(this,it,SensorManager.SENSOR_DELAY_GAME)
@@ -39,17 +39,19 @@ class SensorCollector(private val manager:SensorManager):SensorEventListener{
                 val orientation=FloatArray(3)
                 SensorManager.getRotationMatrixFromVector(matrix,e.values)
                 SensorManager.getOrientation(matrix,orientation)
-                val roll=Math.toDegrees(orientation[2].toDouble())
+                val pitch=Math.toDegrees(orientation[1].toDouble())
 
-                if(rollBaselineDeg==null){
-                    baselineRolls.addLast(roll)
-                    if(baselineRolls.size>=20){
-                        rollBaselineDeg=baselineRolls.average()
-                        baselineRolls.clear()
+                if(pitchBaselineDeg==null){
+                    baselinePitches.addLast(pitch)
+                    if(baselinePitches.size>=20){
+                        pitchBaselineDeg=baselinePitches.average()
+                        baselinePitches.clear()
                     }
                     leanDeg=0.0
                 }else{
-                    leanDeg=normalizeAngle(roll-rollBaselineDeg!!)
+                    // Keep the persisted field name for DB compatibility.
+                    // Positive means the vehicle nose is uphill, negative downhill.
+                    leanDeg=-normalizeAngle(pitch-pitchBaselineDeg!!)
                 }
             }
         }

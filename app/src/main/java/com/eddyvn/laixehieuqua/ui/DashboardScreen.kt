@@ -95,14 +95,35 @@ fun DashboardScreen(
             onClick=gaugeAction,
         )
 
-        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
-            NeedleGauge(drive.trueSpeedKmh,0.0..120.0,"GPS km/h",secondary,Modifier.size(130.dp))
-            NeedleGauge(abs(drive.leanDeg),0.0..50.0,"LEAN °",secondary,Modifier.size(130.dp))
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement=Arrangement.spacedBy(4.dp),
+            verticalAlignment=Alignment.CenterVertically,
+        ){
+            AdaptivePositiveGauge(
+                value=drive.trueSpeedKmh,
+                label="GPS",
+                unit="km/h",
+                accent=accent,
+                secondary=secondary,
+                modifier=Modifier.weight(1f).aspectRatio(1f),
+            )
+            AdaptiveAccelerationGauge(
+                value=drive.accelerationMs2,
+                accent=accent,
+                secondary=secondary,
+                modifier=Modifier.weight(1f).aspectRatio(1f),
+            )
+            SlopeGauge(
+                value=drive.leanDeg,
+                accent=accent,
+                secondary=secondary,
+                modifier=Modifier.weight(1f).aspectRatio(1f),
+            )
         }
         Row(Modifier.fillMaxWidth().padding(top=4.dp),horizontalArrangement=Arrangement.SpaceEvenly){
             InstrumentMetric(vehicleOdometerKm,"ODO")
             InstrumentMetric(drive.distanceKm,"TRIP")
-            InstrumentMetric(drive.accelerationMs2,"ACCEL",unit="m/s²")
         }
 
         if(drive.traffic){
@@ -164,7 +185,6 @@ private fun LandscapeDashboardContent(
     maxHeight:Dp,
 ){
     val gaugeSize=minOf(260.dp,maxHeight*.82f,maxWidth*.42f)
-    val dialSize=minOf(100.dp,maxHeight*.32f)
     val chartWidth=(maxWidth-gaugeSize-40.dp).coerceAtLeast(100.dp)
     Column(Modifier.fillMaxSize().padding(horizontal=14.dp,vertical=6.dp)){
         Row(Modifier.fillMaxWidth().padding(end=52.dp),horizontalArrangement=Arrangement.SpaceBetween){
@@ -192,9 +212,31 @@ private fun LandscapeDashboardContent(
                 verticalArrangement=Arrangement.SpaceBetween,
                 horizontalAlignment=Alignment.CenterHorizontally,
             ){
-                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
-                    NeedleGauge(drive.trueSpeedKmh,0.0..120.0,"GPS km/h",secondary,Modifier.size(dialSize))
-                    NeedleGauge(abs(drive.leanDeg),0.0..50.0,"LEAN °",secondary,Modifier.size(dialSize))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement=Arrangement.spacedBy(3.dp),
+                    verticalAlignment=Alignment.CenterVertically,
+                ){
+                    AdaptivePositiveGauge(
+                        value=drive.trueSpeedKmh,
+                        label="GPS",
+                        unit="km/h",
+                        accent=accent,
+                        secondary=secondary,
+                        modifier=Modifier.weight(1f).aspectRatio(1f),
+                    )
+                    AdaptiveAccelerationGauge(
+                        value=drive.accelerationMs2,
+                        accent=accent,
+                        secondary=secondary,
+                        modifier=Modifier.weight(1f).aspectRatio(1f),
+                    )
+                    SlopeGauge(
+                        value=drive.leanDeg,
+                        accent=accent,
+                        secondary=secondary,
+                        modifier=Modifier.weight(1f).aspectRatio(1f),
+                    )
                 }
                 Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
                     InstrumentMetric(vehicleOdometerKm,"ODO")
