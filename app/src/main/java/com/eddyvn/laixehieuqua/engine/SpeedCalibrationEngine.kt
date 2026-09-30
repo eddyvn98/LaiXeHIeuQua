@@ -4,17 +4,38 @@ import com.eddyvn.laixehieuqua.domain.CalibrationPoint
 
 class SpeedCalibrationEngine{
     fun map(trueSpeedKmh:Double,rawPoints:List<CalibrationPoint>):Double{
-        val points=rawPoints.sortedBy{it.trueSpeedKmh}.distinctBy{it.trueSpeedKmh}
+        val points=rawPoints
+            .sortedBy{it.trueSpeedKmh}
+            .distinctBy{it.trueSpeedKmh.toInt()}
         if(points.isEmpty())return trueSpeedKmh
-        if(points.size==1)return (trueSpeedKmh+points[0].vehicleSpeedKmh-points[0].trueSpeedKmh).coerceAtLeast(0.0)
+        if(points.size==1){
+            val correction=(points[0].vehicleSpeedKmh-points[0].trueSpeedKmh).coerceIn(-10.0,10.0)
+            return (trueSpeedKmh+correction).coerceAtLeast(0.0)
+        }
+
+        if(trueSpeedKmh<=points.first().trueSpeedKmh){
+            val correction=(points.first().vehicleSpeedKmh-points.first().trueSpeedKmh).coerceIn(-10.0,10.0)
+            return (trueSpeedKmh+correction).coerceAtLeast(0.0)
+        }
+        if(trueSpeedKmh>=points.last().trueSpeedKmh){
+            val correction=(points.last().vehicleSpeedKmh-points.last().trueSpeedKmh).coerceIn(-10.0,10.0)
+            return (trueSpeedKmh+correction).coerceAtLeast(0.0)
+        }
+
         val i=points.indexOfLast{it.trueSpeedKmh<=trueSpeedKmh}
-        val pair=when{ i<0->points[0] to points[1]; i>=points.lastIndex->points[points.lastIndex-1] to points.last(); else->points[i] to points[i+1] }
-        val (a,b)=pair
-        val dx=b.trueSpeedKmh-a.trueSpeedKmh
-        if(dx==0.0)return a.vehicleSpeedKmh
-        val t=(trueSpeedKmh-a.trueSpeedKmh)/dx
-        return (a.vehicleSpeedKmh+t*(b.vehicleSpeedKmh-a.vehicleSpeedKmh)).coerceAtLeast(0.0)
+        val a=points[i]
+        val b=points[i+1]
+        val dx=(b.trueSpeedKmh-a.trueSpeedKmh).coerceAtLeast(1.0)
+        val t=((trueSpeedKmh-a.trueSpeedKmh)/dx).coerceIn(0.0,1.0)
+        val correctionA=(a.vehicleSpeedKmh-a.trueSpeedKmh).coerceIn(-10.0,10.0)
+        val correctionB=(b.vehicleSpeedKmh-b.trueSpeedKmh).coerceIn(-10.0,10.0)
+        val correction=correctionA+t*(correctionB-correctionA)
+        return (trueSpeedKmh+correction).coerceAtLeast(0.0)
     }
-    fun isMonotonic(points:List<CalibrationPoint>)=
-        points.sortedBy{it.trueSpeedKmh}.zipWithNext().all{(a,b)->b.vehicleSpeedKmh>=a.vehicleSpeedKmh}
+
+    fun isMonotonic(points:List<CalibrationPoint>):Boolean{
+        val sorted=points.sortedBy{it.trueSpeedKmh}
+        if(sorted.zipWithNext().any{(a,b)->b.trueSpeedKmh-a.trueSpeedKmh<3.0})return false
+        return sorted.zipWithNext().all{(a,b)->b.vehicleSpeedKmh>=a.vehicleSpeedKmh}
+    }
 }
