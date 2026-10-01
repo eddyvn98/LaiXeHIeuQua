@@ -10,7 +10,7 @@
   <main class="app-shell">
     <section class="drive-screen">
       <header class="topbar">
-        <div class="live-dot"><span></span> LIVE</div>
+        <div class="status-stack"><div id="clockTime" class="clock-time">08:32</div><div id="liveStatus" class="live-dot"><span></span> LIVE</div></div>
         <div class="template-name">Premium Segmented</div>
         <div class="top-actions">
           <button id="fuelBtn" class="icon-btn fuel-btn" aria-label="Đổ xăng" title="Đổ xăng">
@@ -97,6 +97,11 @@
             <div class="metric">
               <strong>36.8</strong>
               <span>AVG km/h</span>
+            </div>
+            <div class="metric">
+              <strong id="tripDuration">00:18:42</strong>
+              <span>THỜI GIAN</span>
+              <small>BẮT ĐẦU → KẾT THÚC</small>
             </div>
           </div>
 
