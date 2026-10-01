@@ -40,6 +40,12 @@ data class FuelSummary(
     val bestCycle:FuelCycle?=null,
     val latestFullTimestampMs:Long?=null,
     val cycles:List<FuelCycle> = emptyList(),
+    val learnedCycleCount:Int=0,
+    val averageKmPerLiter:Double?=null,
+    val averageLitersPer100Km:Double?=null,
+    val tankCapacityLiters:Double?=null,
+    val estimatedRemainingLiters:Double?=null,
+    val estimatedRangeKm:Double?=null,
 )
 
 data class EconomyProjection(
