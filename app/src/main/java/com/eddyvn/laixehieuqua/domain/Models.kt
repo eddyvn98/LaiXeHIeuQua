@@ -13,6 +13,8 @@ data class DriveSnapshot(
     val distanceKm:Double=0.0,
     val totalTrackedKm:Double=0.0,
     val movingTimeMs:Long=0L,
+    val sessionStartMs:Long?=null,
+    val sessionElapsedMs:Long=0L,
     val averageSpeedKmh:Double=0.0,
     val traffic:Boolean=false,
     val ecoTargetKmh:Double?=null,
