@@ -38,6 +38,7 @@ fun AppRoot(vm:MainViewModel=viewModel()){
     val projection by vm.projection.collectAsStateWithLifecycle()
     val simulation by vm.simulation.collectAsStateWithLifecycle()
     val vehicleOdometerKm by vm.vehicleOdometerKm.collectAsStateWithLifecycle()
+    val tripMeterKm by vm.tripMeterKm.collectAsStateWithLifecycle()
     val selected=templates.firstOrNull{it.selected}
 
     val permissionLauncher=rememberLauncherForActivityResult(
@@ -70,7 +71,7 @@ fun AppRoot(vm:MainViewModel=viewModel()){
         NavItem("drive","Drive",Tabler.Outline.Gauge),
         NavItem("fuel","Fuel",Tabler.Outline.GasStation),
         NavItem("garage","Garage",Tabler.Outline.Palette),
-        NavItem("calibration","Setup",Tabler.Outline.Camera),
+        NavItem("calibration","ODO",Tabler.Outline.Settings),
         NavItem("simulation","Sim",Tabler.Outline.Gauge),
     )
 
@@ -93,15 +94,14 @@ fun AppRoot(vm:MainViewModel=viewModel()){
         ){
             composable("drive"){
                 DashboardScreen(
-                    drive,
-                    reference,
-                    summary,
-                    projection,
-                    trackingStatus,
-                    selected,
-                    vehicleOdometerKm,
-                    ::startWithPermission,
-                    vm::stopTracking,
+                    drive=drive,
+                    trackingStatus=trackingStatus,
+                    template=selected,
+                    vehicleOdometerKm=vehicleOdometerKm,
+                    tripMeterKm=tripMeterKm,
+                    onResetTrip=vm::resetTripMeter,
+                    onStart=::startWithPermission,
+                    onStop=vm::stopTracking,
                 )
             }
             composable("fuel"){
