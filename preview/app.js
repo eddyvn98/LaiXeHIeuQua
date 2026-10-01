@@ -219,10 +219,8 @@ function formatDuration(ms){
 
 function updateClockAndRide(){
   const now=new Date();
-  renderSevenDisplay(
-    document.getElementById("digitalClock"),
-    now.toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit",hour12:false})
-  );
+  document.getElementById("digitalClock").textContent=
+    now.toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit",hour12:false});
   const elapsed=rideRunning?Date.now()-rideStartedAt:rideElapsedMs;
   tripDuration.textContent=formatDuration(elapsed);
 }
