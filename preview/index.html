@@ -24,7 +24,7 @@
       </header>
 
       <div class="dashboard-grid">
-        <section class="main-gauge-wrap">
+        <section class="left-panel">
           <div class="main-gauge">
             <div class="speed-arc arc-a"></div>
             <div class="speed-arc arc-b"></div>
@@ -33,30 +33,48 @@
             <div class="speed-action">CHẠM ĐỂ DỪNG</div>
             <div class="eco-chip">ECO 44</div>
           </div>
+
+          <section class="chart-block speed-mini-chart">
+            <div class="chart-head">
+              <span>SPEED</span>
+              <span id="speedScaleLabel">36–48 km/h</span>
+            </div>
+            <div class="chart-shell">
+              <div class="chart-scale">
+                <span id="speedMaxLabel">48</span>
+                <span id="speedMidLabel">42</span>
+                <span id="speedMinLabel">36</span>
+              </div>
+              <svg class="chart" viewBox="0 0 900 90" preserveAspectRatio="none">
+                <line x1="0" y1="45" x2="900" y2="45" class="grid-line"/>
+                <polyline id="speedPolyline" class="speed-line"/>
+              </svg>
+            </div>
+          </section>
         </section>
 
         <section class="right-panel">
           <div class="sub-gauges">
             <article class="mini-gauge">
               <div class="mini-ring">
-                <div class="needle gps-needle"></div>
-              </div>
-              <div class="mini-readout">
-                <strong>43</strong>
-                <span>GPS km/h</span>
-                <small>0–80</small>
+                <div class="mini-center">
+                  <strong>43</strong>
+                  <span>GPS km/h</span>
+                  <small>0–80</small>
+                </div>
               </div>
             </article>
+
             <article class="mini-gauge">
               <div class="mini-ring">
-                <div class="needle accel-needle"></div>
-              </div>
-              <div class="mini-readout">
-                <strong>+2.3</strong>
-                <span>ACCEL m/s²</span>
-                <small>±15</small>
+                <div class="mini-center">
+                  <strong>+2.3</strong>
+                  <span>ACCEL m/s²</span>
+                  <small>±15</small>
+                </div>
               </div>
             </article>
+
             <article class="slope-gauge">
               <div class="slope-reference"></div>
               <div class="slope-arm"></div>
@@ -89,22 +107,25 @@
             <div class="fuel-metric"><strong>49.3</strong><span>KM/L</span></div>
           </div>
 
-          <section class="chart-block">
-            <div class="chart-head"><span>SPEED</span><span>0–80 km/h</span></div>
-            <svg class="chart speed-chart" viewBox="0 0 900 90" preserveAspectRatio="none">
-              <line x1="0" y1="40" x2="900" y2="40" class="target-line"/>
-              <polyline points="0,64 70,58 140,61 210,51 280,49 350,43 420,31 490,36 560,29 630,42 700,38 770,47 840,45 900,40" class="speed-line"/>
-            </svg>
+          <section class="chart-block efficiency">
+            <div class="chart-head">
+              <span>DRIVE EFFICIENCY</span>
+              <span id="effScaleLabel">80–92 · AUTO SCALE</span>
+            </div>
+            <div class="chart-shell">
+              <div class="chart-scale">
+                <span id="effMaxLabel">92</span>
+                <span id="effMidLabel">86</span>
+                <span id="effMinLabel">80</span>
+              </div>
+              <svg class="chart" viewBox="0 0 900 120" preserveAspectRatio="none">
+                <line x1="0" y1="60" x2="900" y2="60" class="grid-line"/>
+                <polyline id="effPolyline" class="eff-line"/>
+              </svg>
+            </div>
           </section>
 
-          <section class="chart-block efficiency">
-            <div class="chart-head"><span>DRIVE EFFICIENCY</span><span>86 / 100 · MOVEMENT</span></div>
-            <svg class="chart" viewBox="0 0 900 95" preserveAspectRatio="none">
-              <line x1="0" y1="24" x2="900" y2="24" class="good-line"/>
-              <line x1="0" y1="48" x2="900" y2="48" class="warn-line"/>
-              <polyline points="0,38 80,33 160,31 240,34 320,21 400,28 480,19 560,25 640,31 720,23 800,27 900,22" class="eff-line"/>
-            </svg>
-          </section>
+          <div class="drive-hint">ECO TARGET 44 km/h · biểu đồ tự zoom theo dữ liệu gần đây</div>
         </section>
       </div>
     </section>
