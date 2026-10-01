@@ -22,6 +22,7 @@ fun EconomyGapChart(
     efficiency:List<Double>,
     modifier:Modifier=Modifier,
     chartHeight:Dp=112.dp,
+    compactAxisLabels:Boolean=false,
 ){
     val values=efficiency.takeLast(40).ifEmpty{listOf(100.0,100.0)}
     val latest=values.lastOrNull()?:100.0
@@ -74,7 +75,9 @@ fun EconomyGapChart(
                 verticalArrangement=Arrangement.SpaceBetween,
             ){
                 Text(maxValue.toInt().toString(),fontSize=7.sp,color=Color(0xFF90A4B3))
-                Text(midValue.toInt().toString(),fontSize=7.sp,color=Color(0xFF90A4B3))
+                if(!compactAxisLabels){
+                    Text(midValue.toInt().toString(),fontSize=7.sp,color=Color(0xFF90A4B3))
+                }
                 Text(minValue.toInt().toString(),fontSize=7.sp,color=Color(0xFF90A4B3))
             }
             Canvas(Modifier.weight(1f).height(chartHeight)){
