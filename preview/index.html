@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lái Xe Hiệu Quả · Drive Preview</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="drive-screen">
+      <header class="topbar">
+        <div class="live-dot"><span></span> LIVE</div>
+        <div class="template-name">Premium Segmented</div>
+        <div class="top-actions">
+          <button id="fuelBtn" class="icon-btn fuel-btn" aria-label="Đổ xăng" title="Đổ xăng">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 22V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v19M3 10h12M6 6h6M15 6h2.5l2.5 3v8.5a1.5 1.5 0 0 0 3 0V8l-2-2"/></svg>
+          </button>
+          <div class="gps-text">GPS 13</div>
+          <button class="icon-btn settings-btn" title="Settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21h-4v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H3v-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V3h4v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1H21v4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="dashboard-grid">
+        <section class="main-gauge-wrap">
+          <div class="main-gauge">
+            <div class="speed-arc arc-a"></div>
+            <div class="speed-arc arc-b"></div>
+            <div class="speed-value">42.7</div>
+            <div class="speed-unit">KM/H</div>
+            <div class="speed-action">CHẠM ĐỂ DỪNG</div>
+            <div class="eco-chip">ECO 44</div>
+          </div>
+        </section>
+
+        <section class="right-panel">
+          <div class="sub-gauges">
+            <article class="mini-gauge">
+              <div class="mini-ring">
+                <div class="needle gps-needle"></div>
+              </div>
+              <div class="mini-readout">
+                <strong>43</strong>
+                <span>GPS km/h</span>
+                <small>0–80</small>
+              </div>
+            </article>
+            <article class="mini-gauge">
+              <div class="mini-ring">
+                <div class="needle accel-needle"></div>
+              </div>
+              <div class="mini-readout">
+                <strong>+2.3</strong>
+                <span>ACCEL m/s²</span>
+                <small>±15</small>
+              </div>
+            </article>
+            <article class="slope-gauge">
+              <div class="slope-reference"></div>
+              <div class="slope-arm"></div>
+              <div class="slope-dot"></div>
+              <div class="slope-text"><strong>DOWN 7°</strong><span>SLOPE ±15°</span></div>
+            </article>
+          </div>
+
+          <div class="metrics-row">
+            <button id="odoBtn" class="metric metric-button">
+              <strong id="odoValue">28,542.3</strong>
+              <span>ODO km</span>
+              <small>CHẠM ĐỂ SỬA</small>
+            </button>
+            <div class="metric">
+              <strong>12.4</strong>
+              <span>TRIP km</span>
+              <small>GIỮ ĐỂ RESET</small>
+            </div>
+            <div class="metric">
+              <strong>36.8</strong>
+              <span>AVG km/h</span>
+            </div>
+          </div>
+
+          <div class="fuel-strip">
+            <div class="fuel-metric"><strong id="fuelRemain">4.7 L</strong><span>XĂNG CÒN</span></div>
+            <div class="fuel-metric"><strong id="rangeRemain">231 km</strong><span>KM CÒN</span></div>
+            <div class="fuel-metric"><strong>2.03</strong><span>L/100 KM</span></div>
+            <div class="fuel-metric"><strong>49.3</strong><span>KM/L</span></div>
+          </div>
+
+          <section class="chart-block">
+            <div class="chart-head"><span>SPEED</span><span>0–80 km/h</span></div>
+            <svg class="chart speed-chart" viewBox="0 0 900 90" preserveAspectRatio="none">
+              <line x1="0" y1="40" x2="900" y2="40" class="target-line"/>
+              <polyline points="0,64 70,58 140,61 210,51 280,49 350,43 420,31 490,36 560,29 630,42 700,38 770,47 840,45 900,40" class="speed-line"/>
+            </svg>
+          </section>
+
+          <section class="chart-block efficiency">
+            <div class="chart-head"><span>DRIVE EFFICIENCY</span><span>86 / 100 · MOVEMENT</span></div>
+            <svg class="chart" viewBox="0 0 900 95" preserveAspectRatio="none">
+              <line x1="0" y1="24" x2="900" y2="24" class="good-line"/>
+              <line x1="0" y1="48" x2="900" y2="48" class="warn-line"/>
+              <polyline points="0,38 80,33 160,31 240,34 320,21 400,28 480,19 560,25 640,31 720,23 800,27 900,22" class="eff-line"/>
+            </svg>
+          </section>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="odoDialog" class="modal">
+    <form method="dialog" class="modal-card">
+      <header><h2>Sửa ODO</h2><button value="cancel" class="close-btn">×</button></header>
+      <p>Nhập đúng số ODO đang hiển thị trên xe. Từ mốc này app sẽ cộng quãng đường GPS hợp lệ.</p>
+      <label>ODO hiện tại (km)<input id="odoInput" inputmode="decimal" value="28542.3"></label>
+      <footer><button value="cancel" class="secondary">HỦY</button><button id="saveOdo" value="default" class="primary">LƯU</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="fuelDialog" class="modal">
+    <form method="dialog" class="modal-card fuel-modal">
+      <header><h2>Đổ xăng nhanh</h2><button value="cancel" class="close-btn">×</button></header>
+      <div class="form-grid">
+        <label>ODO hiện tại (km)<input id="fuelOdo" inputmode="decimal" value="28542.3"></label>
+        <label>Đơn giá xăng (₫/lít)<input id="unitPrice" inputmode="decimal" value="23900"></label>
+        <label>Số tiền đã đổ (₫)<input id="amountPaid" inputmode="numeric" value="150000"></label>
+        <div class="calc-row"><span>Lượng xăng</span><strong id="litersCalc">6.28 L</strong></div>
+        <label class="check-row"><input id="fullTank" type="checkbox" checked> Đổ đầy bình</label>
+        <label>Dung tích bình (L) · chỉ cần nhập 1 lần<input id="tankCapacity" inputmode="decimal" value="8"></label>
+        <div class="estimate-box">
+          <span>Sau khi đổ</span>
+          <strong id="afterFill">8.00 L trong bình</strong>
+          <small>Ước tính dựa trên dữ liệu hiện có; càng nhiều chu kỳ đổ đầy càng chính xác.</small>
+        </div>
+      </div>
+      <footer><button value="cancel" class="secondary">HỦY</button><button id="saveFuel" value="default" class="primary">GHI NHẬN</button></footer>
+    </form>
+  </dialog>
+
+  <script src="./app.js"></script>
+</body>
+</html>
