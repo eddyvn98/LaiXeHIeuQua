@@ -10,7 +10,7 @@
   <main class="app-shell">
     <section class="drive-screen">
       <header class="topbar">
-        <div class="status-stack"><div id="clockTime" class="clock-time">08:32</div><div id="liveStatus" class="live-dot"><span></span> LIVE</div></div>
+        <div id="liveStatus" class="live-dot"><span></span> LIVE</div>
         <div class="template-name">Premium Segmented</div>
         <div class="top-actions">
           <button id="fuelBtn" class="icon-btn fuel-btn" aria-label="Đổ xăng" title="Đổ xăng">
@@ -28,8 +28,9 @@
           <div class="main-gauge">
             <div class="speed-arc arc-a"></div>
             <div class="speed-arc arc-b"></div>
-            <div class="speed-value">42.7</div>
-            <div class="speed-unit">KM/H</div>
+            <div class="main-gauge-label">GPS SPEED</div>
+            <div id="gpsSpeedLed" class="seven-display speed-led" aria-label="42.7 km/h"></div>
+            <div class="speed-unit">GPS KM/H</div>
             <div class="speed-action">CHẠM ĐỂ DỪNG</div>
             <div class="eco-chip">ECO 44</div>
           </div>
@@ -37,7 +38,10 @@
           <section class="chart-block speed-mini-chart">
             <div class="chart-head">
               <span>SPEED</span>
-              <span id="speedScaleLabel">36–48 km/h</span>
+              <div class="chart-meta">
+                <span id="speedScaleLabel">36–48 km/h</span>
+                <span class="chart-current">NOW <strong id="speedCurrentValue">43 km/h</strong></span>
+              </div>
             </div>
             <div class="chart-shell">
               <div class="chart-scale">
@@ -47,7 +51,8 @@
               </div>
               <svg class="chart" viewBox="0 0 900 90" preserveAspectRatio="none">
                 <line x1="0" y1="45" x2="900" y2="45" class="grid-line"/>
-                <polyline id="speedPolyline" class="speed-line"/>
+                <path id="speedPath" class="speed-line"/>
+                <circle id="speedCurrentDot" class="current-dot" r="5"/>
               </svg>
             </div>
           </section>
@@ -55,12 +60,12 @@
 
         <section class="right-panel">
           <div class="sub-gauges">
-            <article class="mini-gauge">
+            <article class="mini-gauge clock-gauge">
               <div class="mini-ring">
-                <div class="mini-center">
-                  <strong>43</strong>
-                  <span>GPS km/h</span>
-                  <small>0–80</small>
+                <div class="mini-center clock-center">
+                  <div id="digitalClock" class="seven-display clock-display" aria-label="Thời gian hiện tại"></div>
+                  <span>THỜI GIAN</span>
+                  <small>GIỜ HIỆN TẠI</small>
                 </div>
               </div>
             </article>
@@ -115,7 +120,10 @@
           <section class="chart-block efficiency">
             <div class="chart-head">
               <span>DRIVE EFFICIENCY</span>
-              <span id="effScaleLabel">80–92 · AUTO SCALE</span>
+              <div class="chart-meta">
+                <span id="effScaleLabel">80–92 · AUTO SCALE</span>
+                <span class="chart-current">NOW <strong id="effCurrentValue">88</strong></span>
+              </div>
             </div>
             <div class="chart-shell">
               <div class="chart-scale">
@@ -125,7 +133,8 @@
               </div>
               <svg class="chart" viewBox="0 0 900 120" preserveAspectRatio="none">
                 <line x1="0" y1="60" x2="900" y2="60" class="grid-line"/>
-                <polyline id="effPolyline" class="eff-line"/>
+                <path id="effPath" class="eff-line"/>
+                <circle id="effCurrentDot" class="current-dot eff-dot" r="5"/>
               </svg>
             </div>
           </section>
