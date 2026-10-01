@@ -28,7 +28,6 @@ fun DashboardScreen(
     template:DashboardTemplateEntity?,
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
-    sessionElapsedMs:Long,
     fuelSummary:FuelSummary,
     onResetTrip:()->Unit,
     onOdoClick:()->Unit,
@@ -190,6 +189,7 @@ private fun LandscapeDashboardContent(
     template:DashboardTemplateEntity?,
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
+    sessionElapsedMs:Long,
     fuelSummary:FuelSummary,
     onResetTrip:()->Unit,
     onOdoClick:()->Unit,
@@ -247,6 +247,7 @@ private fun LandscapeDashboardContent(
                     vehicleOdometerKm=vehicleOdometerKm,
                     tripMeterKm=tripMeterKm,
                     averageSpeedKmh=drive.averageSpeedKmh,
+                    sessionElapsedMs=sessionElapsedMs,
                     onResetTrip=onResetTrip,
                     onOdoClick=onOdoClick,
                 )
