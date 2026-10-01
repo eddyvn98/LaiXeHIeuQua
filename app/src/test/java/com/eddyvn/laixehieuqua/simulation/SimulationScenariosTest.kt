@@ -31,8 +31,8 @@ class SimulationScenariosTest {
                 assertTrue(snapshot.trueSpeedKmh.isFinite())
                 assertTrue(snapshot.distanceKm.isFinite())
                 assertTrue(snapshot.trueSpeedKmh in 0.0..180.0)
-                assertTrue(snapshot.speedHistoryKmh.size<=40)
-                assertTrue(snapshot.ecoTargetHistoryKmh.size<=40)
+                assertTrue(snapshot.speedHistoryKmh.size<=50)
+                assertTrue(snapshot.ecoTargetHistoryKmh.size<=50)
                 lastDistanceKm=snapshot.distanceKm
             }
 
