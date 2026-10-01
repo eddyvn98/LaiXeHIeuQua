@@ -1,32 +1,33 @@
 package com.eddyvn.laixehieuqua.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import com.eddyvn.laixehieuqua.data.DashboardTemplateEntity
-import com.eddyvn.laixehieuqua.domain.*
-import com.eddyvn.laixehieuqua.ui.components.*
+import com.eddyvn.laixehieuqua.domain.DriveSnapshot
 import com.eddyvn.laixehieuqua.tracking.TrackingStatus
-import kotlin.math.*
+import com.eddyvn.laixehieuqua.ui.components.*
+import kotlin.math.roundToInt
 
 @Composable
 fun DashboardScreen(
     drive:DriveSnapshot,
-    reference:EconomyReference?,
-    summary:FuelSummary,
-    projection:EconomyProjection?,
     trackingStatus:TrackingStatus,
     template:DashboardTemplateEntity?,
     vehicleOdometerKm:Double?,
+    tripMeterKm:Double,
+    onResetTrip:()->Unit,
     onStart:()->Unit,
     onStop:()->Unit,
 ){
-    val accent=Color(template?.accentHex?:0xFF5CE7FF)
-    val secondary=Color(template?.secondaryHex?:0xFF68FFB2)
+    val accent=Color(template?.accentHex?:0xFF7EEBFF)
+    val secondary=Color(template?.secondaryHex?:0xFF7CFFC0)
     val trackingActive=trackingStatus in setOf(
         TrackingStatus.STARTING,
         TrackingStatus.WAITING_FOR_GPS,
@@ -59,12 +60,11 @@ fun DashboardScreen(
         if(maxWidth>maxHeight){
             LandscapeDashboardContent(
                 drive=drive,
-                reference=reference,
-                summary=summary,
-                projection=projection,
                 trackingStatus=trackingStatus,
                 template=template,
                 vehicleOdometerKm=vehicleOdometerKm,
+                tripMeterKm=tripMeterKm,
+                onResetTrip=onResetTrip,
                 statusLabel=statusLabel,
                 gaugeActionLabel=gaugeActionLabel,
                 gaugeActionEnabled=gaugeClickEnabled,
@@ -74,107 +74,90 @@ fun DashboardScreen(
                 maxWidth=maxWidth,
                 maxHeight=maxHeight,
             )
-        }else Column(
-        Modifier.fillMaxSize().padding(horizontal=18.dp,vertical=12.dp),
+        }else{
+            PortraitDashboardContent(
+                drive=drive,
+                trackingStatus=trackingStatus,
+                template=template,
+                vehicleOdometerKm=vehicleOdometerKm,
+                tripMeterKm=tripMeterKm,
+                onResetTrip=onResetTrip,
+                statusLabel=statusLabel,
+                gaugeActionLabel=gaugeActionLabel,
+                gaugeActionEnabled=gaugeClickEnabled,
+                accent=accent,
+                secondary=secondary,
+                onGaugeClick=gaugeAction,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PortraitDashboardContent(
+    drive:DriveSnapshot,
+    trackingStatus:TrackingStatus,
+    template:DashboardTemplateEntity?,
+    vehicleOdometerKm:Double?,
+    tripMeterKm:Double,
+    onResetTrip:()->Unit,
+    statusLabel:String,
+    gaugeActionLabel:String,
+    gaugeActionEnabled:Boolean,
+    accent:Color,
+    secondary:Color,
+    onGaugeClick:()->Unit,
+){
+    Column(
+        Modifier.fillMaxSize().padding(horizontal=16.dp,vertical=10.dp),
         horizontalAlignment=Alignment.CenterHorizontally,
     ){
-        Row(Modifier.fillMaxWidth().padding(end=52.dp),horizontalArrangement=Arrangement.SpaceBetween){
-            Text(statusLabel,color=if(trackingStatus==TrackingStatus.LIVE)secondary else Color(0xFF708295),fontSize=11.sp)
-            Text(if(drive.traffic)"TRAFFIC" else (template?.name?:"TFT Sport Bike"),color=Color(0xFF8496A7),fontSize=10.sp)
-            Text("GPS "+drive.rawGpsSpeedKmh.roundToInt(),color=Color(0xFF8496A7),fontSize=10.sp)
-        }
+        DashboardHeader(statusLabel,trackingStatus,template,drive.rawGpsSpeedKmh,secondary)
 
         SportSpeedGauge(
             speedKmh=drive.displaySpeedKmh,
             ecoTargetKmh=drive.ecoTargetKmh,
             accent=accent,
             secondary=secondary,
-            modifier=Modifier.size(310.dp),
+            modifier=Modifier.size(300.dp),
             actionLabel=gaugeActionLabel,
-            clickEnabled=gaugeClickEnabled,
-            onClick=gaugeAction,
+            clickEnabled=gaugeActionEnabled,
+            onClick=onGaugeClick,
         )
 
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement=Arrangement.spacedBy(4.dp),
-            verticalAlignment=Alignment.CenterVertically,
-        ){
-            AdaptivePositiveGauge(
-                value=drive.trueSpeedKmh,
-                label="GPS",
-                unit="km/h",
-                accent=accent,
-                secondary=secondary,
-                modifier=Modifier.weight(1f).aspectRatio(1f),
-            )
-            AdaptiveAccelerationGauge(
-                value=drive.accelerationMs2,
-                accent=accent,
-                secondary=secondary,
-                modifier=Modifier.weight(1f).aspectRatio(1f),
-            )
-            SlopeGauge(
-                value=drive.leanDeg,
-                accent=accent,
-                secondary=secondary,
-                modifier=Modifier.weight(1f).aspectRatio(1f),
-            )
-        }
-        Row(Modifier.fillMaxWidth().padding(top=4.dp),horizontalArrangement=Arrangement.SpaceEvenly){
-            InstrumentMetric(vehicleOdometerKm,"ODO")
-            InstrumentMetric(drive.distanceKm,"TRIP")
-        }
+        SubGaugeRow(drive,accent,secondary)
 
-        if(drive.traffic){
-            Text("STOP/GO",color=Color(0xFFFFD166),fontWeight=FontWeight.Bold,fontSize=12.sp)
-        }else drive.ecoTargetKmh?.let{target->
-            Text(
-                "Δ ECO "+"%+.0f".format(drive.displaySpeedKmh-target)+" km/h",
-                color=secondary,
-                fontWeight=FontWeight.Bold,
-                fontSize=12.sp,
-            )
-        }
+        InstrumentRow(
+            vehicleOdometerKm=vehicleOdometerKm,
+            tripMeterKm=tripMeterKm,
+            averageSpeedKmh=drive.averageSpeedKmh,
+            onResetTrip=onResetTrip,
+        )
 
-        EconomyGapChart(drive.speedHistoryKmh,drive.ecoTargetKmh,Modifier.fillMaxWidth().padding(top=6.dp))
+        SpeedTrendChart(
+            speeds=drive.speedHistoryKmh,
+            targetKmh=drive.ecoTargetKmh,
+            modifier=Modifier.fillMaxWidth().padding(top=8.dp),
+            chartHeight=62.dp,
+        )
+        EconomyGapChart(
+            efficiency=drive.efficiencyHistory,
+            modifier=Modifier.fillMaxWidth().padding(top=7.dp),
+            chartHeight=76.dp,
+        )
 
-        Row(Modifier.fillMaxWidth().padding(top=4.dp),horizontalArrangement=Arrangement.SpaceEvenly){
-            Metric(summary.currentCycleKm,"CURRENT")
-            Metric(projection?.projectedCycleKm?:0.0,"PROJECTED")
-            Metric(reference?.cycle?.distanceKm?:summary.bestCycle?.distanceKm?:0.0,"BEST")
-        }
-        projection?.let{
-            Text(
-                (if(it.deltaToBestKm>=0)"▲ " else "▼ ")+"%+.1f km vs Best".format(it.deltaToBestKm),
-                color=if(it.deltaToBestKm>=0)secondary else Color(0xFFFFD166),
-                fontSize=11.sp,
-                fontWeight=FontWeight.Bold,
-                modifier=Modifier.padding(top=3.dp),
-            )
-        }
-
-        Spacer(Modifier.weight(1f))
-        if(trackingStatus==TrackingStatus.WAITING_FOR_GPS){
-            Text("Đang chờ vị trí GPS đầu tiên. Hãy ra nơi thoáng và bật Vị trí.",fontSize=12.sp,color=Color(0xFF8496A7))
-        }else if(trackingStatus==TrackingStatus.PERMISSION_REQUIRED){
-            Text("Cần quyền vị trí để ghi lại chuyến đi.",fontSize=12.sp,color=Color(0xFF8496A7))
-        }else if(trackingStatus==TrackingStatus.ERROR){
-            Text("Không khởi động được GPS. Kiểm tra quyền Vị trí rồi thử lại.",fontSize=12.sp,color=Color(0xFFFFD166))
-        }
-        }
+        DriveStatusHint(drive,trackingStatus,secondary)
     }
 }
 
 @Composable
 private fun LandscapeDashboardContent(
     drive:DriveSnapshot,
-    reference:EconomyReference?,
-    summary:FuelSummary,
-    projection:EconomyProjection?,
     trackingStatus:TrackingStatus,
     template:DashboardTemplateEntity?,
     vehicleOdometerKm:Double?,
+    tripMeterKm:Double,
+    onResetTrip:()->Unit,
     statusLabel:String,
     gaugeActionLabel:String,
     gaugeActionEnabled:Boolean,
@@ -184,14 +167,10 @@ private fun LandscapeDashboardContent(
     maxWidth:Dp,
     maxHeight:Dp,
 ){
-    val gaugeSize=minOf(260.dp,maxHeight*.82f,maxWidth*.42f)
-    val chartWidth=(maxWidth-gaugeSize-40.dp).coerceAtLeast(100.dp)
+    val gaugeSize=minOf(270.dp,maxHeight*.84f,maxWidth*.38f)
     Column(Modifier.fillMaxSize().padding(horizontal=14.dp,vertical=6.dp)){
-        Row(Modifier.fillMaxWidth().padding(end=52.dp),horizontalArrangement=Arrangement.SpaceBetween){
-            Text(statusLabel,color=if(trackingStatus==TrackingStatus.LIVE)secondary else Color(0xFF708295),fontSize=11.sp)
-            Text(if(drive.traffic)"TRAFFIC" else (template?.name?:"TFT Sport Bike"),color=Color(0xFF8496A7),fontSize=10.sp)
-            Text("GPS "+drive.rawGpsSpeedKmh.roundToInt(),color=Color(0xFF8496A7),fontSize=10.sp)
-        }
+        DashboardHeader(statusLabel,trackingStatus,template,drive.rawGpsSpeedKmh,secondary)
+
         Row(
             Modifier.fillMaxWidth().weight(1f),
             horizontalArrangement=Arrangement.spacedBy(16.dp),
@@ -207,90 +186,189 @@ private fun LandscapeDashboardContent(
                 clickEnabled=gaugeActionEnabled,
                 onClick=onGaugeClick,
             )
+
             Column(
                 Modifier.weight(1f).fillMaxHeight(),
-                verticalArrangement=Arrangement.SpaceBetween,
-                horizontalAlignment=Alignment.CenterHorizontally,
+                verticalArrangement=Arrangement.SpaceEvenly,
             ){
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement=Arrangement.spacedBy(3.dp),
-                    verticalAlignment=Alignment.CenterVertically,
-                ){
-                    AdaptivePositiveGauge(
-                        value=drive.trueSpeedKmh,
-                        label="GPS",
-                        unit="km/h",
-                        accent=accent,
-                        secondary=secondary,
-                        modifier=Modifier.weight(1f).aspectRatio(1f),
-                    )
-                    AdaptiveAccelerationGauge(
-                        value=drive.accelerationMs2,
-                        accent=accent,
-                        secondary=secondary,
-                        modifier=Modifier.weight(1f).aspectRatio(1f),
-                    )
-                    SlopeGauge(
-                        value=drive.leanDeg,
-                        accent=accent,
-                        secondary=secondary,
-                        modifier=Modifier.weight(1f).aspectRatio(1f),
-                    )
-                }
-                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
-                    InstrumentMetric(vehicleOdometerKm,"ODO")
-                    InstrumentMetric(drive.distanceKm,"TRIP")
-                }
-                if(drive.traffic){
-                    Text("STOP/GO",color=Color(0xFFFFD166),fontWeight=FontWeight.Bold,fontSize=12.sp)
-                }else drive.ecoTargetKmh?.let{target->
-                    Text(
-                        "Δ ECO "+"%+.0f".format(drive.displaySpeedKmh-target)+" km/h",
-                        color=secondary,fontWeight=FontWeight.Bold,fontSize=12.sp,
-                    )
-                }
-                EconomyGapChart(drive.speedHistoryKmh,drive.ecoTargetKmh,Modifier.width(chartWidth),chartHeight=48.dp)
-                Column(horizontalAlignment=Alignment.CenterHorizontally){
-                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceEvenly){
-                        Metric(summary.currentCycleKm,"CURRENT")
-                        Metric(projection?.projectedCycleKm?:0.0,"PROJECTED")
-                        Metric(reference?.cycle?.distanceKm?:summary.bestCycle?.distanceKm?:0.0,"BEST")
-                    }
-                    projection?.let{
-                        Text(
-                            (if(it.deltaToBestKm>=0)"▲ " else "▼ ")+"%+.1f km vs Best".format(it.deltaToBestKm),
-                            color=if(it.deltaToBestKm>=0)secondary else Color(0xFFFFD166),
-                            fontSize=10.sp,fontWeight=FontWeight.Bold,
-                        )
-                    }
-                }
-                Column(horizontalAlignment=Alignment.CenterHorizontally){
-                    when(trackingStatus){
-                        TrackingStatus.WAITING_FOR_GPS->Text("Đang chờ GPS · ra nơi thoáng",fontSize=11.sp,color=Color(0xFF8496A7))
-                        TrackingStatus.PERMISSION_REQUIRED->Text("Cần quyền vị trí",fontSize=11.sp,color=Color(0xFF8496A7))
-                        TrackingStatus.ERROR->Text("Không khởi động được GPS",fontSize=11.sp,color=Color(0xFFFFD166))
-                        else->Unit
-                    }
-                }
+                SubGaugeRow(drive,accent,secondary)
+
+                InstrumentRow(
+                    vehicleOdometerKm=vehicleOdometerKm,
+                    tripMeterKm=tripMeterKm,
+                    averageSpeedKmh=drive.averageSpeedKmh,
+                    onResetTrip=onResetTrip,
+                )
+
+                SpeedTrendChart(
+                    speeds=drive.speedHistoryKmh,
+                    targetKmh=drive.ecoTargetKmh,
+                    modifier=Modifier.fillMaxWidth(),
+                    chartHeight=42.dp,
+                )
+
+                EconomyGapChart(
+                    efficiency=drive.efficiencyHistory,
+                    modifier=Modifier.fillMaxWidth(),
+                    chartHeight=48.dp,
+                )
+
+                DriveStatusHint(drive,trackingStatus,secondary)
             }
         }
     }
 }
 
 @Composable
-private fun Metric(value:Double,label:String){
-    Column(horizontalAlignment=Alignment.CenterHorizontally){
-        Text(if(value>0)"%.1f".format(value) else "—",fontSize=18.sp,fontWeight=FontWeight.Bold)
-        Text(label+" KM",fontSize=8.sp,color=Color(0xFF6F8192),letterSpacing=1.sp)
+private fun DashboardHeader(
+    statusLabel:String,
+    trackingStatus:TrackingStatus,
+    template:DashboardTemplateEntity?,
+    rawGpsSpeedKmh:Double,
+    secondary:Color,
+){
+    Row(
+        Modifier.fillMaxWidth().padding(end=52.dp),
+        horizontalArrangement=Arrangement.SpaceBetween,
+    ){
+        Text(
+            statusLabel,
+            color=if(trackingStatus==TrackingStatus.LIVE)secondary else Color.White,
+            fontSize=11.sp,
+            fontWeight=FontWeight.Bold,
+        )
+        Text(
+            template?.name?:"Premium Segmented",
+            color=Color(0xFFE0EAF1),
+            fontSize=10.sp,
+        )
+        Text(
+            "GPS "+rawGpsSpeedKmh.roundToInt(),
+            color=Color.White,
+            fontSize=10.sp,
+            fontWeight=FontWeight.Bold,
+        )
     }
 }
 
+@Composable
+private fun SubGaugeRow(
+    drive:DriveSnapshot,
+    accent:Color,
+    secondary:Color,
+){
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement=Arrangement.spacedBy(3.dp),
+        verticalAlignment=Alignment.CenterVertically,
+    ){
+        AdaptivePositiveGauge(
+            value=drive.trueSpeedKmh,
+            label="GPS",
+            unit="km/h",
+            accent=accent,
+            secondary=secondary,
+            modifier=Modifier.weight(1f).aspectRatio(1f),
+        )
+        AdaptiveAccelerationGauge(
+            value=drive.accelerationMs2,
+            accent=accent,
+            secondary=secondary,
+            modifier=Modifier.weight(1f).aspectRatio(1f),
+        )
+        SlopeGauge(
+            value=drive.leanDeg,
+            accent=accent,
+            secondary=secondary,
+            modifier=Modifier.weight(1f).aspectRatio(1f),
+        )
+    }
+}
 
 @Composable
-private fun InstrumentMetric(value:Double?,label:String,unit:String="km"){
-    Column(horizontalAlignment=Alignment.CenterHorizontally){
-        Text(value?.let{"%.1f".format(it)}?:"—",fontSize=17.sp,fontWeight=FontWeight.Bold)
-        Text(label+" "+unit,fontSize=8.sp,color=Color(0xFF6F8192),letterSpacing=.7.sp)
+private fun InstrumentRow(
+    vehicleOdometerKm:Double?,
+    tripMeterKm:Double,
+    averageSpeedKmh:Double,
+    onResetTrip:()->Unit,
+){
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement=Arrangement.SpaceEvenly,
+        verticalAlignment=Alignment.CenterVertically,
+    ){
+        InstrumentMetric(vehicleOdometerKm,"ODO","km")
+        InstrumentMetric(
+            value=tripMeterKm,
+            label="TRIP",
+            unit="km",
+            hint="GIỮ ĐỂ RESET",
+            onLongPress=onResetTrip,
+        )
+        InstrumentMetric(averageSpeedKmh,"AVG","km/h")
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun InstrumentMetric(
+    value:Double?,
+    label:String,
+    unit:String,
+    hint:String?=null,
+    onLongPress:(()->Unit)?=null,
+){
+    val modifier=if(onLongPress!=null){
+        Modifier.combinedClickable(
+            onClick={},
+            onLongClick=onLongPress,
+        )
+    }else Modifier
+
+    Column(
+        horizontalAlignment=Alignment.CenterHorizontally,
+        modifier=modifier.padding(horizontal=8.dp,vertical=3.dp),
+    ){
+        Text(
+            value?.let{"%.1f".format(it)}?:"—",
+            fontSize=18.sp,
+            fontWeight=FontWeight.Bold,
+            color=Color.White,
+        )
+        Text(
+            "$label $unit",
+            fontSize=8.sp,
+            color=Color(0xFFD5E2EA),
+            letterSpacing=.7.sp,
+            fontWeight=FontWeight.Bold,
+        )
+        hint?.let{
+            Text(it,fontSize=6.sp,color=Color(0xFF9FB4C2),letterSpacing=.5.sp)
+        }
+    }
+}
+
+@Composable
+private fun DriveStatusHint(
+    drive:DriveSnapshot,
+    trackingStatus:TrackingStatus,
+    secondary:Color,
+){
+    when{
+        trackingStatus==TrackingStatus.WAITING_FOR_GPS->
+            Text("Đang chờ GPS · ra nơi thoáng",fontSize=11.sp,color=Color.White)
+        trackingStatus==TrackingStatus.PERMISSION_REQUIRED->
+            Text("Cần quyền vị trí",fontSize=11.sp,color=Color.White)
+        trackingStatus==TrackingStatus.ERROR->
+            Text("Không khởi động được GPS",fontSize=11.sp,color=Color(0xFFFFD166))
+        drive.traffic->
+            Text("STOP/GO · không phạt hiệu quả vì kẹt xe",fontSize=10.sp,color=Color(0xFFFFD166))
+        drive.ecoTargetKmh!=null->
+            Text(
+                "ECO TARGET ${drive.ecoTargetKmh.roundToInt()} km/h",
+                fontSize=10.sp,
+                color=secondary,
+                fontWeight=FontWeight.Bold,
+            )
     }
 }

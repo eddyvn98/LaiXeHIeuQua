@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.eddyvn.laixehieuqua.data.*
 import com.eddyvn.laixehieuqua.domain.CalibrationStore
 import com.eddyvn.laixehieuqua.domain.EconomyReferenceStore
+import com.eddyvn.laixehieuqua.domain.TripMeterStore
 import com.eddyvn.laixehieuqua.domain.VehicleInstrumentStore
 import com.eddyvn.laixehieuqua.simulation.SimulationController
 import com.eddyvn.laixehieuqua.tracking.DriveStateStore
@@ -17,6 +18,7 @@ class AppGraph(context: Context) {
     val economyReferenceStore = EconomyReferenceStore()
     val calibrationStore = CalibrationStore()
     val vehicleInstrumentStore = VehicleInstrumentStore(context)
+    val tripMeterStore = TripMeterStore(context)
     val fuelRepository = FuelRepository(database.dao(), economyReferenceStore)
     val fuelMarketPriceRepository = FuelMarketPriceRepository(context)
     val templateRepository = TemplateRepository(database.dao())

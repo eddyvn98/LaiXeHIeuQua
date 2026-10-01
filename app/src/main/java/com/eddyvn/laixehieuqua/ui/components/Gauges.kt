@@ -52,7 +52,7 @@ fun SportSpeedGauge(
             val box=androidx.compose.ui.geometry.Size(2*r,2*r)
             val topLeft=Offset(center.x-r,center.y-r)
             drawCircle(Color(0xFF111923),r,center,style=Stroke(15.dp.toPx()))
-            drawArc(Color(0xFF26394A),140f,260f,false,topLeft,box,style=Stroke(2.dp.toPx()))
+            drawArc(Color(0xFF5C7184),140f,260f,false,topLeft,box,style=Stroke(2.dp.toPx()))
             val progress=(animatedSpeed/120f).coerceIn(0f,1f)
             drawArc(accent,140f,260f*progress,false,topLeft,box,style=Stroke(7.dp.toPx(),cap=StrokeCap.Round))
             ecoTargetKmh?.let{
@@ -64,8 +64,8 @@ fun SportSpeedGauge(
         }
         Column(horizontalAlignment=Alignment.CenterHorizontally){
             SegmentedNumber(String.format(java.util.Locale.US,"%.1f",animatedSpeed),onColor=accent)
-            Text("KM/H",fontSize=10.sp,letterSpacing=2.sp,color=Color(0xFF8799AA))
-            Text(actionLabel,fontSize=7.sp,letterSpacing=.8.sp,color=Color(0xFF718495),modifier=Modifier.padding(top=5.dp))
+            Text("KM/H",fontSize=10.sp,letterSpacing=2.sp,color=Color(0xFFE5EEF5))
+            Text(actionLabel,fontSize=7.sp,letterSpacing=.8.sp,color=Color(0xFFC8D6E1),modifier=Modifier.padding(top=5.dp))
             ecoTargetKmh?.let{
                 Text("ECO "+animatedEcoTarget.roundToInt(),fontSize=13.sp,fontWeight=FontWeight.Bold,color=secondary,modifier=Modifier.padding(top=10.dp))
             }
@@ -102,9 +102,9 @@ fun AdaptivePositiveGauge(
             val c=Offset(size.width/2,size.height/2)
             val box=androidx.compose.ui.geometry.Size(2*r,2*r)
             val top=Offset(c.x-r,c.y-r)
-            drawArc(Color(0xFF17212C),start,sweep,false,top,box,style=Stroke(7.dp.toPx(),cap=StrokeCap.Round))
+            drawArc(Color(0xFF405364),start,sweep,false,top,box,style=Stroke(7.dp.toPx(),cap=StrokeCap.Round))
             drawArc(liveColor,start,sweep*progress,false,top,box,style=Stroke(5.dp.toPx(),cap=StrokeCap.Round))
-            drawNeedle(c,r,needleAngle,liveColor,3.5.dp.toPx())
+            drawNeedle(c,r,needleAngle,liveColor,3.5.dp.toPx(),length=.62f)
         }
         GaugeText(
             value="%.0f".format(animatedValue),
@@ -140,9 +140,9 @@ fun AdaptiveAccelerationGauge(
             val c=Offset(size.width/2,size.height/2)
             val box=androidx.compose.ui.geometry.Size(2*r,2*r)
             val top=Offset(c.x-r,c.y-r)
-            drawArc(Color(0xFF17212C),135f,270f,false,top,box,style=Stroke(7.dp.toPx(),cap=StrokeCap.Round))
+            drawArc(Color(0xFF405364),135f,270f,false,top,box,style=Stroke(7.dp.toPx(),cap=StrokeCap.Round))
             drawSignedArc(top,box,needleAngle,zeroAngle,liveColor,5.dp.toPx())
-            drawNeedle(c,r,needleAngle,liveColor,3.5.dp.toPx())
+            drawNeedle(c,r,needleAngle,liveColor,3.5.dp.toPx(),length=.62f)
             drawNeedle(c,r,zeroAngle,Color(0xFF546474),1.2.dp.toPx(),length=.60f)
         }
         GaugeText(
@@ -253,11 +253,11 @@ fun SlopeGauge(
 private fun GaugeText(value:String,label:String,scale:String,color:Color){
     Column(
         horizontalAlignment=Alignment.CenterHorizontally,
-        modifier=Modifier.offset(y=22.dp).padding(horizontal=4.dp,vertical=3.dp),
+        modifier=Modifier.offset(y=30.dp).padding(horizontal=4.dp,vertical=3.dp),
     ){
         Text(value,fontSize=15.sp,fontWeight=FontWeight.Bold,color=color)
         Text(label,fontSize=7.sp,fontWeight=FontWeight.Bold,color=color.copy(alpha=.88f))
-        Text(scale,fontSize=7.sp,color=Color(0xFF7C8E9E))
+        Text(scale,fontSize=7.sp,color=Color(0xFFD3E0E9))
     }
 }
 

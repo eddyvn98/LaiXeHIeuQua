@@ -12,11 +12,14 @@ data class DriveSnapshot(
     val leanDeg:Double=0.0,
     val distanceKm:Double=0.0,
     val totalTrackedKm:Double=0.0,
+    val movingTimeMs:Long=0L,
+    val averageSpeedKmh:Double=0.0,
     val traffic:Boolean=false,
     val ecoTargetKmh:Double?=null,
     val ecoTargetConfidence:Double=0.0,
     val speedHistoryKmh:List<Double> = emptyList(),
     val ecoTargetHistoryKmh:List<Double> = emptyList(),
+    val efficiencyHistory:List<Double> = emptyList(),
 )
 
 enum class FuelConfidence { HIGH, MEDIUM, LOW }
