@@ -2,7 +2,6 @@ package com.eddyvn.laixehieuqua.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
@@ -13,79 +12,73 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.*
-import kotlin.math.abs
-import kotlin.math.ceil
-import kotlin.math.max
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun EconomyGapChart(
-    speeds:List<Double>,
-    targetKmh:Double?,
+    efficiency:List<Double>,
     modifier:Modifier=Modifier,
     chartHeight:Dp=112.dp,
 ){
-    val previousHistory=remember{mutableStateOf(speeds)}
-    val currentHistory=remember{mutableStateOf(speeds)}
+    val previousHistory=remember{mutableStateOf(efficiency)}
+    val currentHistory=remember{mutableStateOf(efficiency)}
     val scrollProgress=remember{Animatable(1f)}
-    LaunchedEffect(speeds){
-        if(speeds!=currentHistory.value){
+
+    LaunchedEffect(efficiency){
+        if(efficiency!=currentHistory.value){
             previousHistory.value=currentHistory.value
-            currentHistory.value=speeds
+            currentHistory.value=efficiency
             scrollProgress.snapTo(0f)
-            scrollProgress.animateTo(1f,tween(900,easing=LinearEasing))
+            scrollProgress.animateTo(1f,tween(550,easing=LinearEasing))
         }
     }
 
-    val values=currentHistory.value.ifEmpty{listOf(0.0,0.0)}
+    val values=currentHistory.value.ifEmpty{listOf(100.0,100.0)}
     val previous=previousHistory.value.ifEmpty{values}
-    val target=targetKmh?:values.lastOrNull()?:0.0
-    val animatedTarget by animateFloatAsState(
-        targetValue=target.toFloat(),
-        animationSpec=tween(700,easing=LinearEasing),
-        label="eco-chart-target",
-    )
-    val scale=max(3,ceil((values+previous).maxOfOrNull{abs(it-target)}?:0.0).toInt()+1)
+    val latest=values.lastOrNull()?:100.0
 
     Column(modifier.clipToBounds()){
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
-            Text("ECO GAP",fontSize=10.sp,color=Color(0xFF7E91A3),letterSpacing=1.5.sp)
-            Text("AUTO ±$scale km/h",fontSize=9.sp,color=Color(0xFFA3B4C3))
+            Text(
+                "DRIVE EFFICIENCY",
+                fontSize=10.sp,
+                color=Color(0xFFD7E5EF),
+                letterSpacing=1.4.sp,
+            )
+            Text(
+                "${latest.toInt()} / 100 · MOVEMENT",
+                fontSize=9.sp,
+                color=Color(0xFFFFFFFF),
+            )
         }
         Canvas(Modifier.fillMaxWidth().height(chartHeight).clipToBounds()){
-            val range=scale.toFloat()
-            fun y(value:Float)=size.height*(0.5f-(value-animatedTarget)/(range*2f))
-            val targetY=y(animatedTarget)
-            drawLine(Color(0xFF347FFF),Offset(0f,targetY),Offset(size.width,targetY),1.5.dp.toPx())
+            fun y(value:Double)=size.height*(1f-(value.coerceIn(0.0,100.0)/100.0).toFloat())
 
-            val historyWidth=size.width*0.94f
-            val points=historyPoints(previous,values,scrollProgress.value){value->y(value.toFloat())}
+            drawLine(
+                Color(0xFF64FFB5).copy(alpha=.35f),
+                Offset(0f,y(80.0)),
+                Offset(size.width,y(80.0)),
+                1.dp.toPx(),
+            )
+            drawLine(
+                Color(0xFFFFD166).copy(alpha=.28f),
+                Offset(0f,y(60.0)),
+                Offset(size.width,y(60.0)),
+                1.dp.toPx(),
+            )
+
+            val historyWidth=size.width*.97f
+            val points=historyPoints(previous,values,scrollProgress.value){v->y(v)}
                 .map{it.copy(x=it.x*historyWidth)}
+
             if(points.size>=2){
                 drawPath(
                     path=smoothPath(points),
-                    color=Color(0xFFFFB000),
-                    style=Stroke(width=2.5.dp.toPx()),
-                )
-            }
-            if(points.isNotEmpty()&&values.size>=2){
-                val trend=(values.last()-values[values.lastIndex-1]).toFloat()
-                val last=points.last()
-                val projected=Path().apply{
-                    moveTo(last.x,last.y)
-                    lineTo(size.width*0.97f,y(values.last().toFloat()+trend))
-                    lineTo(size.width,y(values.last().toFloat()+trend*2f))
-                }
-                drawPath(
-                    path=projected,
-                    color=Color(0xFFFFB000).copy(alpha=0.55f),
-                    style=Stroke(
-                        width=2.dp.toPx(),
-                        pathEffect=PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(),4.dp.toPx())),
-                    ),
+                    color=Color(0xFF64FFB5),
+                    style=Stroke(width=3.dp.toPx()),
                 )
             }
         }
