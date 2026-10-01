@@ -123,3 +123,48 @@ renderAdaptiveChart({
   suffix:"",
   height:120,
 });
+
+const clockTime=document.getElementById("clockTime");
+const tripDuration=document.getElementById("tripDuration");
+const mainGauge=document.querySelector(".main-gauge");
+const speedAction=document.querySelector(".speed-action");
+const liveStatus=document.getElementById("liveStatus");
+
+let rideRunning=true;
+let rideStartedAt=Date.now()-(18*60+42)*1000;
+let rideElapsedMs=0;
+
+function formatDuration(ms){
+  const totalSeconds=Math.max(0,Math.floor(ms/1000));
+  const hours=Math.floor(totalSeconds/3600);
+  const minutes=Math.floor((totalSeconds%3600)/60);
+  const seconds=totalSeconds%60;
+  return [hours,minutes,seconds].map(v=>String(v).padStart(2,"0")).join(":");
+}
+
+function updateClockAndRide(){
+  const now=new Date();
+  clockTime.textContent=now.toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit",hour12:false});
+  const elapsed=rideRunning?Date.now()-rideStartedAt:rideElapsedMs;
+  tripDuration.textContent=formatDuration(elapsed);
+}
+setInterval(updateClockAndRide,1000);
+updateClockAndRide();
+
+mainGauge.addEventListener("click",()=>{
+  if(rideRunning){
+    rideElapsedMs=Date.now()-rideStartedAt;
+    rideRunning=false;
+    speedAction.textContent="CHẠM ĐỂ BẮT ĐẦU";
+    liveStatus.innerHTML="<span></span> KẾT THÚC";
+    liveStatus.classList.add("stopped");
+  }else{
+    rideStartedAt=Date.now();
+    rideElapsedMs=0;
+    rideRunning=true;
+    speedAction.textContent="CHẠM ĐỂ DỪNG";
+    liveStatus.innerHTML="<span></span> LIVE";
+    liveStatus.classList.remove("stopped");
+  }
+  updateClockAndRide();
+});
