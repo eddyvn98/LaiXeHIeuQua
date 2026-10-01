@@ -65,3 +65,61 @@ document.getElementById("saveFuel").addEventListener("click",event=>{
   fuelDialog.close();
 });
 recalcFuel();
+
+function roundNice(value,step){
+  return Math.round(value/step)*step;
+}
+
+function renderAdaptiveChart({values,polylineId,minId,midId,maxId,scaleId,padding,step,suffix,height=90}){
+  const rawMin=Math.min(...values);
+  const rawMax=Math.max(...values);
+  let min=Math.floor((rawMin-padding)/step)*step;
+  let max=Math.ceil((rawMax+padding)/step)*step;
+  if(max-min<step*4){
+    const center=(min+max)/2;
+    min=center-step*2;
+    max=center+step*2;
+  }
+  const mid=(min+max)/2;
+  const width=900;
+  const points=values.map((value,index)=>{
+    const x=values.length===1?0:index/(values.length-1)*width;
+    const y=height-((value-min)/(max-min))*height;
+    return x.toFixed(1)+","+y.toFixed(1);
+  }).join(" ");
+  document.getElementById(polylineId).setAttribute("points",points);
+  document.getElementById(minId).textContent=roundNice(min,step);
+  document.getElementById(midId).textContent=roundNice(mid,step);
+  document.getElementById(maxId).textContent=roundNice(max,step);
+  document.getElementById(scaleId).textContent=
+    roundNice(min,step)+"–"+roundNice(max,step)+(suffix?" "+suffix:"")+" · AUTO SCALE";
+}
+
+const recentSpeed=[39,41,40,42,44,43,45,47,46,44,43,45,46,48,47,45,44,42,41,43,44,43];
+const recentEfficiency=[84,86,85,87,88,86,89,91,90,92,89,88,90,91,89,87,88,90,89,91,90,88];
+
+renderAdaptiveChart({
+  values:recentSpeed,
+  polylineId:"speedPolyline",
+  minId:"speedMinLabel",
+  midId:"speedMidLabel",
+  maxId:"speedMaxLabel",
+  scaleId:"speedScaleLabel",
+  padding:1,
+  step:2,
+  suffix:"km/h",
+  height:90,
+});
+
+renderAdaptiveChart({
+  values:recentEfficiency,
+  polylineId:"effPolyline",
+  minId:"effMinLabel",
+  midId:"effMidLabel",
+  maxId:"effMaxLabel",
+  scaleId:"effScaleLabel",
+  padding:1,
+  step:2,
+  suffix:"",
+  height:120,
+});
