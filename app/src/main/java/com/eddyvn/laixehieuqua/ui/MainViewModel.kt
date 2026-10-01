@@ -162,6 +162,30 @@ class MainViewModel(application:Application):AndroidViewModel(application){
         }
     }
 
+    fun recordFuelFromDrive(
+        odometerKm:Double,
+        unitPrice:Double,
+        amount:Double,
+        full:Boolean,
+        tankCapacityLiters:Double?,
+    ){
+        if(odometerKm<0.0||unitPrice<=0.0||amount<=0.0)return
+        val liters=amount/unitPrice
+        if(liters<=0.0)return
+
+        setVehicleOdometer(odometerKm)
+        graph.fuelRepository.setTankCapacity(tankCapacityLiters)
+
+        viewModelScope.launch{
+            graph.fuelRepository.addEntry(
+                liters=liters,
+                totalPrice=amount,
+                isFull=full,
+                vehicleOdometerKm=odometerKm,
+            )
+        }
+    }
+
     fun refreshFuelMarketPrice(force:Boolean=false){
         val now=System.currentTimeMillis()
         if(_fuelMarketPrice.value.loading||(!force&&now-lastFuelPriceRefreshMs<15*60*1000))return

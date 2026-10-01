@@ -3,14 +3,19 @@ package com.eddyvn.laixehieuqua.ui
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
+import com.composables.icons.tabler.Tabler
+import com.composables.icons.tabler.outline.GasStation
 import com.eddyvn.laixehieuqua.data.DashboardTemplateEntity
 import com.eddyvn.laixehieuqua.domain.DriveSnapshot
+import com.eddyvn.laixehieuqua.domain.FuelSummary
 import com.eddyvn.laixehieuqua.tracking.TrackingStatus
 import com.eddyvn.laixehieuqua.ui.components.*
 import kotlin.math.roundToInt
@@ -22,7 +27,10 @@ fun DashboardScreen(
     template:DashboardTemplateEntity?,
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
+    fuelSummary:FuelSummary,
     onResetTrip:()->Unit,
+    onOdoClick:()->Unit,
+    onFuelClick:()->Unit,
     onStart:()->Unit,
     onStop:()->Unit,
 ){
@@ -64,7 +72,10 @@ fun DashboardScreen(
                 template=template,
                 vehicleOdometerKm=vehicleOdometerKm,
                 tripMeterKm=tripMeterKm,
+                fuelSummary=fuelSummary,
                 onResetTrip=onResetTrip,
+                onOdoClick=onOdoClick,
+                onFuelClick=onFuelClick,
                 statusLabel=statusLabel,
                 gaugeActionLabel=gaugeActionLabel,
                 gaugeActionEnabled=gaugeClickEnabled,
@@ -81,7 +92,10 @@ fun DashboardScreen(
                 template=template,
                 vehicleOdometerKm=vehicleOdometerKm,
                 tripMeterKm=tripMeterKm,
+                fuelSummary=fuelSummary,
                 onResetTrip=onResetTrip,
+                onOdoClick=onOdoClick,
+                onFuelClick=onFuelClick,
                 statusLabel=statusLabel,
                 gaugeActionLabel=gaugeActionLabel,
                 gaugeActionEnabled=gaugeClickEnabled,
@@ -100,7 +114,10 @@ private fun PortraitDashboardContent(
     template:DashboardTemplateEntity?,
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
+    fuelSummary:FuelSummary,
     onResetTrip:()->Unit,
+    onOdoClick:()->Unit,
+    onFuelClick:()->Unit,
     statusLabel:String,
     gaugeActionLabel:String,
     gaugeActionEnabled:Boolean,
@@ -112,14 +129,16 @@ private fun PortraitDashboardContent(
         Modifier.fillMaxSize().padding(horizontal=16.dp,vertical=10.dp),
         horizontalAlignment=Alignment.CenterHorizontally,
     ){
-        DashboardHeader(statusLabel,trackingStatus,template,drive.rawGpsSpeedKmh,secondary)
+        DashboardHeader(
+            statusLabel,trackingStatus,template,drive.rawGpsSpeedKmh,secondary,onFuelClick
+        )
 
         SportSpeedGauge(
             speedKmh=drive.displaySpeedKmh,
             ecoTargetKmh=drive.ecoTargetKmh,
             accent=accent,
             secondary=secondary,
-            modifier=Modifier.size(300.dp),
+            modifier=Modifier.size(292.dp),
             actionLabel=gaugeActionLabel,
             clickEnabled=gaugeActionEnabled,
             onClick=onGaugeClick,
@@ -132,18 +151,24 @@ private fun PortraitDashboardContent(
             tripMeterKm=tripMeterKm,
             averageSpeedKmh=drive.averageSpeedKmh,
             onResetTrip=onResetTrip,
+            onOdoClick=onOdoClick,
+        )
+
+        FuelEstimateStrip(
+            summary=fuelSummary,
+            modifier=Modifier.fillMaxWidth().padding(top=6.dp),
         )
 
         SpeedTrendChart(
             speeds=drive.speedHistoryKmh,
             targetKmh=drive.ecoTargetKmh,
-            modifier=Modifier.fillMaxWidth().padding(top=8.dp),
-            chartHeight=62.dp,
+            modifier=Modifier.fillMaxWidth().padding(top=7.dp),
+            chartHeight=54.dp,
         )
         EconomyGapChart(
             efficiency=drive.efficiencyHistory,
-            modifier=Modifier.fillMaxWidth().padding(top=7.dp),
-            chartHeight=76.dp,
+            modifier=Modifier.fillMaxWidth().padding(top=6.dp),
+            chartHeight=62.dp,
         )
 
         DriveStatusHint(drive,trackingStatus,secondary)
@@ -157,7 +182,10 @@ private fun LandscapeDashboardContent(
     template:DashboardTemplateEntity?,
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
+    fuelSummary:FuelSummary,
     onResetTrip:()->Unit,
+    onOdoClick:()->Unit,
+    onFuelClick:()->Unit,
     statusLabel:String,
     gaugeActionLabel:String,
     gaugeActionEnabled:Boolean,
@@ -169,7 +197,9 @@ private fun LandscapeDashboardContent(
 ){
     val gaugeSize=minOf(270.dp,maxHeight*.84f,maxWidth*.38f)
     Column(Modifier.fillMaxSize().padding(horizontal=14.dp,vertical=6.dp)){
-        DashboardHeader(statusLabel,trackingStatus,template,drive.rawGpsSpeedKmh,secondary)
+        DashboardHeader(
+            statusLabel,trackingStatus,template,drive.rawGpsSpeedKmh,secondary,onFuelClick
+        )
 
         Row(
             Modifier.fillMaxWidth().weight(1f),
@@ -198,19 +228,25 @@ private fun LandscapeDashboardContent(
                     tripMeterKm=tripMeterKm,
                     averageSpeedKmh=drive.averageSpeedKmh,
                     onResetTrip=onResetTrip,
+                    onOdoClick=onOdoClick,
+                )
+
+                FuelEstimateStrip(
+                    summary=fuelSummary,
+                    modifier=Modifier.fillMaxWidth(),
                 )
 
                 SpeedTrendChart(
                     speeds=drive.speedHistoryKmh,
                     targetKmh=drive.ecoTargetKmh,
                     modifier=Modifier.fillMaxWidth(),
-                    chartHeight=42.dp,
+                    chartHeight=36.dp,
                 )
 
                 EconomyGapChart(
                     efficiency=drive.efficiencyHistory,
                     modifier=Modifier.fillMaxWidth(),
-                    chartHeight=48.dp,
+                    chartHeight=40.dp,
                 )
 
                 DriveStatusHint(drive,trackingStatus,secondary)
@@ -226,10 +262,12 @@ private fun DashboardHeader(
     template:DashboardTemplateEntity?,
     rawGpsSpeedKmh:Double,
     secondary:Color,
+    onFuelClick:()->Unit,
 ){
     Row(
         Modifier.fillMaxWidth().padding(end=52.dp),
         horizontalArrangement=Arrangement.SpaceBetween,
+        verticalAlignment=Alignment.CenterVertically,
     ){
         Text(
             statusLabel,
@@ -242,6 +280,17 @@ private fun DashboardHeader(
             color=Color(0xFFE0EAF1),
             fontSize=10.sp,
         )
+        IconButton(
+            onClick=onFuelClick,
+            modifier=Modifier.size(34.dp),
+        ){
+            Icon(
+                Tabler.Outline.GasStation,
+                contentDescription="Đổ xăng",
+                tint=secondary,
+                modifier=Modifier.size(22.dp),
+            )
+        }
         Text(
             "GPS "+rawGpsSpeedKmh.roundToInt(),
             color=Color.White,
@@ -291,13 +340,20 @@ private fun InstrumentRow(
     tripMeterKm:Double,
     averageSpeedKmh:Double,
     onResetTrip:()->Unit,
+    onOdoClick:()->Unit,
 ){
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement=Arrangement.SpaceEvenly,
         verticalAlignment=Alignment.CenterVertically,
     ){
-        InstrumentMetric(vehicleOdometerKm,"ODO","km")
+        InstrumentMetric(
+            value=vehicleOdometerKm,
+            label="ODO",
+            unit="km",
+            hint="CHẠM ĐỂ SỬA",
+            onClick=onOdoClick,
+        )
         InstrumentMetric(
             value=tripMeterKm,
             label="TRIP",
@@ -316,11 +372,12 @@ private fun InstrumentMetric(
     label:String,
     unit:String,
     hint:String?=null,
+    onClick:(()->Unit)?=null,
     onLongPress:(()->Unit)?=null,
 ){
-    val modifier=if(onLongPress!=null){
+    val modifier=if(onClick!=null||onLongPress!=null){
         Modifier.combinedClickable(
-            onClick={},
+            onClick=onClick?:{},
             onLongClick=onLongPress,
         )
     }else Modifier

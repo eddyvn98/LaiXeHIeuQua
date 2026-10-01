@@ -59,6 +59,35 @@ fun FuelScreen(
             }
         }
         item{
+            Card(Modifier.fillMaxWidth()){
+                Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){
+                    Text("Ước tính nhiên liệu",style=MaterialTheme.typography.titleMedium)
+                    if(summary.averageKmPerLiter!=null){
+                        Text(
+                            "Còn khoảng %.1f L · ~%.0f km".format(
+                                summary.estimatedRemainingLiters?:0.0,
+                                summary.estimatedRangeKm?:0.0,
+                            ),
+                            style=MaterialTheme.typography.titleLarge,
+                        )
+                        Text(
+                            "Trung bình %.2f L/100 km · %.1f km/L · %d chu kỳ".format(
+                                summary.averageLitersPer100Km?:0.0,
+                                summary.averageKmPerLiter,
+                                summary.learnedCycleCount,
+                            ),
+                            style=MaterialTheme.typography.bodySmall,
+                        )
+                    }else{
+                        Text("Đang học. Cần ít nhất một chu kỳ đổ đầy hoàn chỉnh để ước tính xăng còn lại và quãng đường còn chạy.",style=MaterialTheme.typography.bodyMedium)
+                    }
+                    if(summary.tankCapacityLiters==null){
+                        Text("Nhập dung tích bình ở lần ghi nhận đổ xăng tiếp theo.",style=MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
+        item{
             OutlinedTextField(
                 value=amountText,
                 onValueChange={amountText=it.filter(Char::isDigit)},

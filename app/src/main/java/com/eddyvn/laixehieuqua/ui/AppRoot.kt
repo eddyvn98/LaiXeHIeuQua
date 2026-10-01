@@ -93,16 +93,44 @@ fun AppRoot(vm:MainViewModel=viewModel()){
             modifier=Modifier.padding(paddingValues),
         ){
             composable("drive"){
+                var showOdoDialog by remember{mutableStateOf(false)}
+                var showFuelDialog by remember{mutableStateOf(false)}
+
                 DashboardScreen(
                     drive=drive,
                     trackingStatus=trackingStatus,
                     template=selected,
                     vehicleOdometerKm=vehicleOdometerKm,
                     tripMeterKm=tripMeterKm,
+                    fuelSummary=summary,
                     onResetTrip=vm::resetTripMeter,
+                    onOdoClick={showOdoDialog=true},
+                    onFuelClick={
+                        vm.refreshFuelMarketPrice(false)
+                        showFuelDialog=true
+                    },
                     onStart=::startWithPermission,
                     onStop=vm::stopTracking,
                 )
+
+                if(showOdoDialog){
+                    OdoEditDialog(
+                        currentOdoKm=vehicleOdometerKm,
+                        onDismiss={showOdoDialog=false},
+                        onSave=vm::setVehicleOdometer,
+                    )
+                }
+
+                if(showFuelDialog){
+                    FuelQuickAddDialog(
+                        currentOdoKm=vehicleOdometerKm,
+                        marketPricePerLiter=fuelMarketPrice.price?.pricePerLiter?.toDouble(),
+                        summary=summary,
+                        onRefreshPrice={vm.refreshFuelMarketPrice(true)},
+                        onDismiss={showFuelDialog=false},
+                        onSave=vm::recordFuelFromDrive,
+                    )
+                }
             }
             composable("fuel"){
                 FuelScreen(
