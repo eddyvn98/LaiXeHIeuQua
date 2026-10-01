@@ -17,6 +17,7 @@ import com.eddyvn.laixehieuqua.domain.DriveInputSample
 import com.eddyvn.laixehieuqua.engine.DrivePipeline
 import com.google.android.gms.location.*
 import kotlinx.coroutines.*
+import kotlin.math.max
 
 class TrackingService:Service(){
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.IO.limitedParallelism(1))
@@ -96,11 +97,15 @@ class TrackingService:Service(){
                     totalDistanceM=baseTotalDistanceM,
                 )
 
+                // 500 ms desired cadence gives the estimator more frequent targets,
+                // while the UI still smooths independently. Android may deliver slower
+                // updates when GNSS conditions or power policy require it.
                 val request=LocationRequest.Builder(
                     Priority.PRIORITY_HIGH_ACCURACY,
-                    1_000L,
+                    500L,
                 )
-                    .setMinUpdateIntervalMillis(500L)
+                    .setMinUpdateIntervalMillis(250L)
+                    .setMaxUpdateDelayMillis(1_000L)
                     .build()
 
                 if(stopping)return@launch
@@ -143,8 +148,8 @@ class TrackingService:Service(){
         val time=location.time.takeIf{it>0}?:System.currentTimeMillis()
         val raw=(location.speed*3.6).coerceAtLeast(0.0)
 
-        val delta=previous?.distanceTo(location)?.toDouble()
-            ?.takeIf{location.accuracy<=50f&&it in 0.0..250.0}?:0.0
+        val old=previous
+        val delta=validatedDeltaMeters(old,location,raw)
         previous=location
 
         val sample=DriveInputSample(
@@ -158,7 +163,7 @@ class TrackingService:Service(){
         val snapshot=pipeline.consume(
             sample=sample,
             reference=app.graph.economyReferenceStore.state.value,
-            activeCalibration=app.graph.calibrationStore.state.value,
+            activeCalibration=null,
         )
         app.graph.driveStateStore.update(snapshot)
 
@@ -178,6 +183,24 @@ class TrackingService:Service(){
                 )
             )
         }
+    }
+
+    private fun validatedDeltaMeters(old:Location?,current:Location,currentSpeedKmh:Double):Double{
+        if(old==null)return 0.0
+        if(current.accuracy>30f || old.accuracy>30f)return 0.0
+
+        val oldSpeedKmh=(old.speed*3.6).coerceAtLeast(0.0)
+        // Both samples say stopped: ignore coordinate wander completely.
+        if(currentSpeedKmh<2.0 && oldSpeedKmh<2.0)return 0.0
+
+        val distance=old.distanceTo(current).toDouble()
+        if(distance<0.7)return 0.0
+
+        val dtSeconds=((current.time-old.time).coerceAtLeast(250L))/1000.0
+        val speedLimitKmh=max(currentSpeedKmh,oldSpeedKmh)+35.0
+        val plausibleMaxMeters=(speedLimitKmh/3.6)*dtSeconds+8.0
+        if(distance>plausibleMaxMeters || distance>120.0)return 0.0
+        return distance
     }
 
     private fun stopTracking(){
