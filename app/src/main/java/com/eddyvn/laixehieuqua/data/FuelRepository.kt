@@ -2,6 +2,7 @@ package com.eddyvn.laixehieuqua.data
 
 import com.eddyvn.laixehieuqua.domain.*
 import com.eddyvn.laixehieuqua.engine.FuelEconomyEngine
+import com.eddyvn.laixehieuqua.engine.FuelEstimateEngine
 import kotlinx.coroutines.flow.*
 import kotlin.math.max
 
@@ -11,6 +12,7 @@ class FuelRepository(
     private val tankStore:FuelTankStore,
 ){
     private val engine=FuelEconomyEngine()
+    private val estimateEngine=FuelEstimateEngine()
 
     val entries:Flow<List<FuelEntryEntity>> = dao.fuelEntriesFlow()
 
@@ -22,14 +24,6 @@ class FuelRepository(
         val sorted=fuelEntries.sortedBy{it.timestampMs}
         val cycles=engine.buildCycles(sorted)
         val best=engine.bestCycle(cycles)
-        val validCycles=cycles.filter{it.confidence!=FuelConfidence.LOW}
-        val averageKmPerLiter=validCycles
-            .takeIf{it.isNotEmpty()}
-            ?.let{items->
-                val liters=items.sumOf{it.liters}
-                if(liters>0.0)items.sumOf{it.distanceKm}/liters else null
-            }
-
         val latestFull=sorted.lastOrNull{it.isFull}
         val currentKm=latestFull?.let{
             max(0.0,totalTrackedM/1000.0-it.appOdometerKm)
@@ -42,25 +36,25 @@ class FuelRepository(
                 .sumOf{it.liters}
         }?:0.0
 
-        val remaining=if(
-            latestFull!=null&&capacity!=null&&averageKmPerLiter!=null&&averageKmPerLiter>0.0
-        ){
-            (capacity+partialLiters-currentKm/averageKmPerLiter)
-                .coerceIn(0.0,capacity)
-        }else null
+        val estimate=estimateEngine.estimate(
+            cycles=cycles,
+            currentCycleKm=currentKm,
+            tankCapacityLiters=capacity,
+            partialLitersSinceFull=partialLiters,
+            hasFullReference=latestFull!=null,
+        )
 
         FuelSummary(
             currentCycleKm=currentKm,
             bestCycle=best,
             latestFullTimestampMs=latestFull?.timestampMs,
             cycles=cycles,
-            learnedCycleCount=validCycles.size,
-            averageKmPerLiter=averageKmPerLiter,
-            averageLitersPer100Km=averageKmPerLiter?.takeIf{it>0.0}?.let{100.0/it},
+            learnedCycleCount=estimate.learnedCycleCount,
+            averageKmPerLiter=estimate.averageKmPerLiter,
+            averageLitersPer100Km=estimate.averageLitersPer100Km,
             tankCapacityLiters=capacity,
-            estimatedRemainingLiters=remaining,
-            estimatedRangeKm=if(remaining!=null&&averageKmPerLiter!=null)
-                remaining*averageKmPerLiter else null,
+            estimatedRemainingLiters=estimate.remainingLiters,
+            estimatedRangeKm=estimate.rangeKm,
         )
     }.distinctUntilChanged()
 
