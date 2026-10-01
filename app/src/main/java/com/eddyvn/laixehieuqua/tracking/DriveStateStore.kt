@@ -22,8 +22,24 @@ class DriveStateStore{
 
     fun update(value:DriveSnapshot){mutable.value=value}
     fun setTrackingStatus(value:TrackingStatus){mutableTrackingStatus.value=value}
-    fun markStopped(){
-        mutable.value=mutable.value.copy(tracking=false)
+
+    fun beginSession(startMs:Long){
+        mutable.value=mutable.value.copy(
+            tracking=true,
+            sessionStartMs=startMs,
+            sessionElapsedMs=0L,
+        )
+    }
+
+    fun markStopped(endMs:Long=System.currentTimeMillis()){
+        val current=mutable.value
+        val elapsed=current.sessionStartMs
+            ?.let{(endMs-it).coerceAtLeast(current.sessionElapsedMs)}
+            ?:current.sessionElapsedMs
+        mutable.value=current.copy(
+            tracking=false,
+            sessionElapsedMs=elapsed,
+        )
         mutableTrackingStatus.value=TrackingStatus.IDLE
     }
 }

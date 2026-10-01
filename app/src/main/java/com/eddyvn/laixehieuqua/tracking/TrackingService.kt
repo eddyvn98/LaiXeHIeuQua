@@ -87,14 +87,17 @@ class TrackingService:Service(){
             try{
                 val dao=app.graph.database.dao()
                 val active=dao.activeSession()
-                val id=active?.id?:dao.insertSession(SessionEntity(startMs=System.currentTimeMillis()))
+                val sessionStartMs=active?.startMs?:System.currentTimeMillis()
+                val id=active?.id?:dao.insertSession(SessionEntity(startMs=sessionStartMs))
                 sessionId=id
+                store.beginSession(sessionStartMs)
 
                 val baseTotalDistanceM=dao.totalTrackedDistanceM()
                 val sessionBaseDistanceM=dao.sessionDistanceM(id)
                 pipeline.reset(
                     sessionDistanceM=sessionBaseDistanceM,
                     totalDistanceM=baseTotalDistanceM,
+                    sessionStartMs=sessionStartMs,
                 )
 
                 // 500 ms desired cadence gives the estimator more frequent targets,
@@ -177,7 +180,7 @@ class TrackingService:Service(){
                     accuracyM=location.accuracy,
                     rawGpsSpeedKmh=raw,
                     trueSpeedKmh=snapshot.trueSpeedKmh,
-                    accelerationMs2=sensors.accelerationMs2,
+                    accelerationMs2=snapshot.accelerationMs2,
                     leanDeg=sensors.leanDeg,
                     deltaDistanceM=delta,
                 )
@@ -212,11 +215,12 @@ class TrackingService:Service(){
         scope.launch{
             startJob?.join()
             val id=sessionId
+            val endMs=System.currentTimeMillis()
             if(id!=null){
                 val dao=app.graph.database.dao()
                 dao.closeSession(
                     id=id,
-                    endMs=System.currentTimeMillis(),
+                    endMs=endMs,
                     distanceM=dao.sessionDistanceM(id),
                     avgSpeed=dao.sessionAvgSpeed(id),
                     maxSpeed=dao.sessionMaxSpeed(id),
@@ -224,7 +228,7 @@ class TrackingService:Service(){
                 )
                 app.graph.fuelRepository.refreshBestReference()
             }
-            app.graph.driveStateStore.markStopped()
+            app.graph.driveStateStore.markStopped(endMs)
             withContext(Dispatchers.Main.immediate){
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()

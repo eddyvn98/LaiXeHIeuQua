@@ -83,7 +83,9 @@ class SimulationController(
         speedMultiplier:Int,
     ){
         job?.cancel()
-        pipeline.reset()
+        val baseTime=System.currentTimeMillis()
+        pipeline.reset(sessionStartMs=baseTime)
+        driveStateStore.beginSession(baseTime)
         val total=frames.lastOrNull()?.relativeTimeMs?:0L
         mutable.value=SimulationState(
             active=true,
@@ -97,7 +99,6 @@ class SimulationController(
         )
 
         job=scope.launch{
-            val baseTime=System.currentTimeMillis()
             var previousRelative=frames.firstOrNull()?.relativeTimeMs?:0L
 
             for((index,frame) in frames.withIndex()){
@@ -135,7 +136,7 @@ class SimulationController(
                 )
             }
 
-            driveStateStore.markStopped()
+            driveStateStore.markStopped(baseTime+total)
             mutable.value=mutable.value.copy(
                 active=false,
                 paused=false,

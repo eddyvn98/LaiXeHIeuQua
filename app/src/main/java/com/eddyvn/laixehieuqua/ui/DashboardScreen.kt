@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -19,6 +19,7 @@ import com.eddyvn.laixehieuqua.domain.FuelSummary
 import com.eddyvn.laixehieuqua.tracking.TrackingStatus
 import com.eddyvn.laixehieuqua.ui.components.*
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 
 @Composable
 fun DashboardScreen(
@@ -59,6 +60,7 @@ fun DashboardScreen(
         else->if(trackingActive)"CHẠM ĐỂ DỪNG" else "CHẠM ĐỂ BẮT ĐẦU"
     }
     val gaugeAction=if(trackingActive)onStop else onStart
+    val displayedSessionElapsedMs=rememberDisplayedSessionElapsed(drive,trackingStatus)
     val gaugeClickEnabled=trackingStatus !in setOf(
         TrackingStatus.REQUESTING_PERMISSION,
         TrackingStatus.STOPPING,
@@ -72,6 +74,7 @@ fun DashboardScreen(
                 template=template,
                 vehicleOdometerKm=vehicleOdometerKm,
                 tripMeterKm=tripMeterKm,
+                sessionElapsedMs=displayedSessionElapsedMs,
                 fuelSummary=fuelSummary,
                 onResetTrip=onResetTrip,
                 onOdoClick=onOdoClick,
@@ -92,6 +95,7 @@ fun DashboardScreen(
                 template=template,
                 vehicleOdometerKm=vehicleOdometerKm,
                 tripMeterKm=tripMeterKm,
+                sessionElapsedMs=displayedSessionElapsedMs,
                 fuelSummary=fuelSummary,
                 onResetTrip=onResetTrip,
                 onOdoClick=onOdoClick,
@@ -114,6 +118,7 @@ private fun PortraitDashboardContent(
     template:DashboardTemplateEntity?,
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
+    sessionElapsedMs:Long,
     fuelSummary:FuelSummary,
     onResetTrip:()->Unit,
     onOdoClick:()->Unit,
@@ -144,12 +149,20 @@ private fun PortraitDashboardContent(
             onClick=onGaugeClick,
         )
 
+        SpeedTrendChart(
+            speeds=drive.speedHistoryKmh,
+            targetKmh=drive.ecoTargetKmh,
+            modifier=Modifier.fillMaxWidth(.90f).padding(top=4.dp),
+            chartHeight=46.dp,
+        )
+
         SubGaugeRow(drive,accent,secondary)
 
         InstrumentRow(
             vehicleOdometerKm=vehicleOdometerKm,
             tripMeterKm=tripMeterKm,
             averageSpeedKmh=drive.averageSpeedKmh,
+            sessionElapsedMs=sessionElapsedMs,
             onResetTrip=onResetTrip,
             onOdoClick=onOdoClick,
         )
@@ -159,12 +172,6 @@ private fun PortraitDashboardContent(
             modifier=Modifier.fillMaxWidth().padding(top=6.dp),
         )
 
-        SpeedTrendChart(
-            speeds=drive.speedHistoryKmh,
-            targetKmh=drive.ecoTargetKmh,
-            modifier=Modifier.fillMaxWidth().padding(top=7.dp),
-            chartHeight=54.dp,
-        )
         EconomyGapChart(
             efficiency=drive.efficiencyHistory,
             modifier=Modifier.fillMaxWidth().padding(top=6.dp),
@@ -182,6 +189,7 @@ private fun LandscapeDashboardContent(
     template:DashboardTemplateEntity?,
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
+    sessionElapsedMs:Long,
     fuelSummary:FuelSummary,
     onResetTrip:()->Unit,
     onOdoClick:()->Unit,
@@ -206,16 +214,28 @@ private fun LandscapeDashboardContent(
             horizontalArrangement=Arrangement.spacedBy(16.dp),
             verticalAlignment=Alignment.CenterVertically,
         ){
-            SportSpeedGauge(
-                speedKmh=drive.displaySpeedKmh,
-                ecoTargetKmh=drive.ecoTargetKmh,
-                accent=accent,
-                secondary=secondary,
-                modifier=Modifier.size(gaugeSize),
-                actionLabel=gaugeActionLabel,
-                clickEnabled=gaugeActionEnabled,
-                onClick=onGaugeClick,
-            )
+            Column(
+                modifier=Modifier.width(gaugeSize+24.dp),
+                horizontalAlignment=Alignment.CenterHorizontally,
+                verticalArrangement=Arrangement.Center,
+            ){
+                SportSpeedGauge(
+                    speedKmh=drive.displaySpeedKmh,
+                    ecoTargetKmh=drive.ecoTargetKmh,
+                    accent=accent,
+                    secondary=secondary,
+                    modifier=Modifier.size(gaugeSize),
+                    actionLabel=gaugeActionLabel,
+                    clickEnabled=gaugeActionEnabled,
+                    onClick=onGaugeClick,
+                )
+                SpeedTrendChart(
+                    speeds=drive.speedHistoryKmh,
+                    targetKmh=drive.ecoTargetKmh,
+                    modifier=Modifier.fillMaxWidth(),
+                    chartHeight=42.dp,
+                )
+            }
 
             Column(
                 Modifier.weight(1f).fillMaxHeight(),
@@ -227,6 +247,7 @@ private fun LandscapeDashboardContent(
                     vehicleOdometerKm=vehicleOdometerKm,
                     tripMeterKm=tripMeterKm,
                     averageSpeedKmh=drive.averageSpeedKmh,
+                    sessionElapsedMs=sessionElapsedMs,
                     onResetTrip=onResetTrip,
                     onOdoClick=onOdoClick,
                 )
@@ -234,13 +255,6 @@ private fun LandscapeDashboardContent(
                 FuelEstimateStrip(
                     summary=fuelSummary,
                     modifier=Modifier.fillMaxWidth(),
-                )
-
-                SpeedTrendChart(
-                    speeds=drive.speedHistoryKmh,
-                    targetKmh=drive.ecoTargetKmh,
-                    modifier=Modifier.fillMaxWidth(),
-                    chartHeight=36.dp,
                 )
 
                 EconomyGapChart(
@@ -311,12 +325,8 @@ private fun SubGaugeRow(
         horizontalArrangement=Arrangement.spacedBy(3.dp),
         verticalAlignment=Alignment.CenterVertically,
     ){
-        AdaptivePositiveGauge(
-            value=drive.trueSpeedKmh,
-            label="GPS",
-            unit="km/h",
+        DigitalClockGauge(
             accent=accent,
-            secondary=secondary,
             modifier=Modifier.weight(1f).aspectRatio(1f),
         )
         AdaptiveAccelerationGauge(
@@ -339,6 +349,7 @@ private fun InstrumentRow(
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
     averageSpeedKmh:Double,
+    sessionElapsedMs:Long,
     onResetTrip:()->Unit,
     onOdoClick:()->Unit,
 ){
@@ -362,6 +373,12 @@ private fun InstrumentRow(
             onLongPress=onResetTrip,
         )
         InstrumentMetric(averageSpeedKmh,"AVG","km/h")
+        InstrumentTextMetric(
+            value=formatDuration(sessionElapsedMs),
+            label="THỜI GIAN",
+            unit="",
+            hint="BẮT ĐẦU → KẾT THÚC",
+        )
     }
 }
 
@@ -403,6 +420,72 @@ private fun InstrumentMetric(
             Text(it,fontSize=6.sp,color=Color(0xFF9FB4C2),letterSpacing=.5.sp)
         }
     }
+}
+
+@Composable
+private fun InstrumentTextMetric(
+    value:String,
+    label:String,
+    unit:String,
+    hint:String?=null,
+){
+    Column(
+        horizontalAlignment=Alignment.CenterHorizontally,
+        modifier=Modifier.padding(horizontal=8.dp,vertical=3.dp),
+    ){
+        Text(
+            value,
+            fontSize=16.sp,
+            fontWeight=FontWeight.Bold,
+            color=Color.White,
+        )
+        Text(
+            listOf(label,unit).filter{it.isNotBlank()}.joinToString(" "),
+            fontSize=8.sp,
+            color=Color(0xFFD5E2EA),
+            letterSpacing=.7.sp,
+            fontWeight=FontWeight.Bold,
+        )
+        hint?.let{
+            Text(it,fontSize=6.sp,color=Color(0xFF9FB4C2),letterSpacing=.5.sp)
+        }
+    }
+}
+
+@Composable
+private fun rememberDisplayedSessionElapsed(
+    drive:DriveSnapshot,
+    trackingStatus:TrackingStatus,
+):Long{
+    val active=trackingStatus in setOf(
+        TrackingStatus.STARTING,
+        TrackingStatus.WAITING_FOR_GPS,
+        TrackingStatus.LIVE,
+        TrackingStatus.STOPPING,
+    )
+    var nowMs by remember{mutableLongStateOf(System.currentTimeMillis())}
+    LaunchedEffect(active,drive.sessionStartMs){
+        while(active){
+            nowMs=System.currentTimeMillis()
+            delay(1_000L)
+        }
+    }
+    val liveElapsed=drive.sessionStartMs?.let{
+        (nowMs-it).coerceAtLeast(0L)
+    }?:0L
+    return if(active){
+        maxOf(drive.sessionElapsedMs,liveElapsed)
+    }else{
+        drive.sessionElapsedMs
+    }
+}
+
+private fun formatDuration(ms:Long):String{
+    val totalSeconds=(ms.coerceAtLeast(0L)/1000L)
+    val hours=totalSeconds/3600L
+    val minutes=(totalSeconds%3600L)/60L
+    val seconds=totalSeconds%60L
+    return "%02d:%02d:%02d".format(hours,minutes,seconds)
 }
 
 @Composable

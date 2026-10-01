@@ -11,11 +11,14 @@ class SensorCollector(private val manager:SensorManager):SensorEventListener{
 
     private val baselinePitches=ArrayDeque<Double>()
     private var pitchBaselineDeg:Double?=null
+    private var accelerationInitialized=false
 
     fun start(){
         baselinePitches.clear()
         pitchBaselineDeg=null
         leanDeg=0.0
+        accelerationMs2=0.0
+        accelerationInitialized=false
         manager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION)?.let{
             manager.registerListener(this,it,SensorManager.SENSOR_DELAY_GAME)
         }
@@ -32,7 +35,14 @@ class SensorCollector(private val manager:SensorManager):SensorEventListener{
                 val x=e.values[0].toDouble()
                 val y=e.values[1].toDouble()
                 val z=e.values[2].toDouble()
-                accelerationMs2=sqrt(x*x+y*y+z*z)
+                val raw=sqrt(x*x+y*y+z*z)
+                val filtered=if(accelerationInitialized){
+                    accelerationMs2*.82+raw*.18
+                }else{
+                    accelerationInitialized=true
+                    raw
+                }
+                accelerationMs2=if(filtered<.05)0.0 else filtered
             }
             Sensor.TYPE_ROTATION_VECTOR->{
                 val matrix=FloatArray(9)

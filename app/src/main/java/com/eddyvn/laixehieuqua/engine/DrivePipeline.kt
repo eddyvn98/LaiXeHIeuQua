@@ -10,6 +10,7 @@ class DrivePipeline {
     private val fusion=SpeedFusionEngine()
     private val trafficDetector=TrafficDetector()
     private val eco=EcoTargetEngine()
+    private val accelerationEstimator=LongitudinalAccelerationEstimator()
 
     private val speedHistory=ArrayDeque<Double>()
     private val targetHistory=ArrayDeque<Double>()
@@ -18,11 +19,17 @@ class DrivePipeline {
     private var totalDistanceM=0.0
     private var movingTimeMs=0L
     private var lastSampleTimeMs:Long?=null
+    private var sessionStartMs:Long?=null
 
-    fun reset(sessionDistanceM:Double=0.0,totalDistanceM:Double=0.0){
+    fun reset(
+        sessionDistanceM:Double=0.0,
+        totalDistanceM:Double=0.0,
+        sessionStartMs:Long?=null,
+    ){
         fusion.reset()
         trafficDetector.clear()
         eco.reset()
+        accelerationEstimator.reset()
         speedHistory.clear()
         targetHistory.clear()
         efficiencyHistory.clear()
@@ -30,6 +37,7 @@ class DrivePipeline {
         this.totalDistanceM=totalDistanceM.coerceAtLeast(0.0)
         movingTimeMs=0L
         lastSampleTimeMs=null
+        this.sessionStartMs=sessionStartMs
     }
 
     fun consume(
@@ -43,10 +51,15 @@ class DrivePipeline {
             sample.accelerationMs2,
             sample.gpsAccuracyM,
         )
+        val smoothAcceleration=accelerationEstimator.update(
+            timeMs=sample.timestampMs,
+            speedKmh=trueSpeed,
+            sensorAccelerationMs2=sample.accelerationMs2,
+        )
         val traffic=trafficDetector.update(sample.timestampMs,trueSpeed)
         val target=eco.update(
             trueSpeed,
-            sample.accelerationMs2,
+            smoothAcceleration,
             traffic,
             reference?.ecoSpeedKmh,
         )
@@ -68,7 +81,7 @@ class DrivePipeline {
         totalDistanceM+=delta
 
         val targetGap=target.targetKmh?.let{abs(trueSpeed-it)}?:0.0
-        val accelPenalty=abs(sample.accelerationMs2).coerceAtMost(5.0)*7.0
+        val accelPenalty=abs(smoothAcceleration).coerceAtMost(5.0)*7.0
         val targetPenalty=if(traffic)0.0 else targetGap.coerceAtMost(25.0)*1.1
         val efficiency=(100.0-accelPenalty-targetPenalty).coerceIn(0.0,100.0)
 
@@ -80,6 +93,8 @@ class DrivePipeline {
         while(efficiencyHistory.size>50)efficiencyHistory.removeFirst()
 
         val distanceKm=sessionDistanceM/1000.0
+        val startMs=sessionStartMs?:sample.timestampMs.also{sessionStartMs=it}
+        val sessionElapsedMs=(sample.timestampMs-startMs).coerceAtLeast(0L)
         val averageSpeed=if(movingTimeMs>0L){
             distanceKm/(movingTimeMs/3_600_000.0)
         }else 0.0
@@ -89,11 +104,13 @@ class DrivePipeline {
             trueSpeedKmh=trueSpeed,
             displaySpeedKmh=display,
             rawGpsSpeedKmh=sample.rawGpsSpeedKmh,
-            accelerationMs2=sample.accelerationMs2,
+            accelerationMs2=smoothAcceleration,
             leanDeg=sample.leanDeg,
             distanceKm=distanceKm,
             totalTrackedKm=totalDistanceM/1000.0,
             movingTimeMs=movingTimeMs,
+            sessionStartMs=startMs,
+            sessionElapsedMs=sessionElapsedMs,
             averageSpeedKmh=averageSpeed.coerceIn(0.0,180.0),
             traffic=traffic,
             ecoTargetKmh=target.targetKmh,
