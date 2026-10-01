@@ -124,7 +124,7 @@ fun AppRoot(vm:MainViewModel=viewModel()){
                 if(showFuelDialog){
                     FuelQuickAddDialog(
                         currentOdoKm=vehicleOdometerKm,
-                        marketPricePerLiter=fuelMarketPrice.price?.pricePerLiter,
+                        marketPricePerLiter=fuelMarketPrice.price?.pricePerLiter?.toDouble(),
                         summary=summary,
                         onRefreshPrice={vm.refreshFuelMarketPrice(true)},
                         onDismiss={showFuelDialog=false},
