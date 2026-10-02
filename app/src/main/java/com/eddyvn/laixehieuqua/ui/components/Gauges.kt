@@ -28,6 +28,7 @@ import kotlin.math.*
 @Composable
 fun SportSpeedGauge(
     speedKmh:Double,
+    averageSpeedKmh:Double,
     ecoTargetKmh:Double?,
     accent:Color,
     secondary:Color,
@@ -40,6 +41,11 @@ fun SportSpeedGauge(
         targetValue=speedKmh.toFloat().coerceAtLeast(0f),
         animationSpec=tween(160,easing=FastOutSlowInEasing),
         label="speed-gauge",
+    )
+    val animatedAverageSpeed by animateFloatAsState(
+        targetValue=averageSpeedKmh.toFloat().coerceAtLeast(0f),
+        animationSpec=tween(360,easing=FastOutSlowInEasing),
+        label="average-speed-gauge",
     )
     val animatedEcoTarget by animateFloatAsState(
         targetValue=(ecoTargetKmh?:0.0).toFloat(),
@@ -83,6 +89,29 @@ fun SportSpeedGauge(
                 box,
                 style=Stroke(7.dp.toPx(),cap=StrokeCap.Round),
             )
+
+            val averageRadius=r-12.dp.toPx()
+            val averageBox=androidx.compose.ui.geometry.Size(
+                averageRadius*2,
+                averageRadius*2,
+            )
+            val averageTopLeft=Offset(
+                center.x-averageRadius,
+                center.y-averageRadius,
+            )
+            val averageProgress=(animatedAverageSpeed/120f).coerceIn(0f,1f)
+            if(averageProgress>0f){
+                drawArc(
+                    secondary.copy(alpha=.68f),
+                    140f,
+                    260f*averageProgress,
+                    false,
+                    averageTopLeft,
+                    averageBox,
+                    style=Stroke(3.dp.toPx(),cap=StrokeCap.Round),
+                )
+            }
+
             ecoTargetKmh?.let{
                 val angle=Math.toRadians(
                     140.0+260.0*(animatedEcoTarget/120f).coerceIn(0f,1f)
@@ -116,6 +145,13 @@ fun SportSpeedGauge(
                 fontSize=10.sp,
                 letterSpacing=2.sp,
                 color=Color(0xFFE5EEF5),
+            )
+            Text(
+                "AVG "+String.format(Locale.US,"%.0f",animatedAverageSpeed)+" KM/H",
+                fontSize=8.sp,
+                fontWeight=FontWeight.Bold,
+                color=secondary.copy(alpha=.90f),
+                modifier=Modifier.padding(top=3.dp),
             )
             Text(
                 actionLabel,
@@ -250,12 +286,13 @@ fun AdaptivePositiveGauge(
 @Composable
 fun AdaptiveAccelerationGauge(
     value:Double,
+    averageMagnitudeMs2:Double,
     accent:Color,
     secondary:Color,
     modifier:Modifier=Modifier,
 ){
     val scale=rememberExpandingScale(
-        abs(value).toFloat(),
+        maxOf(abs(value),averageMagnitudeMs2).toFloat(),
         2f,
         listOf(2f,4f,6f,8f,12f),
     )
@@ -266,6 +303,11 @@ fun AdaptiveAccelerationGauge(
             easing=FastOutSlowInEasing,
         ),
         label="acceleration-gauge",
+    )
+    val animatedAverage by animateFloatAsState(
+        targetValue=averageMagnitudeMs2.toFloat().coerceAtLeast(0f),
+        animationSpec=tween(360,easing=FastOutSlowInEasing),
+        label="average-acceleration-gauge",
     )
     val normalized=(animatedValue/scale).coerceIn(-1f,1f)
     val severity=abs(normalized)
@@ -298,6 +340,29 @@ fun AdaptiveAccelerationGauge(
                 width=5.dp.toPx(),
             )
 
+            val averageProgress=(animatedAverage/scale).coerceIn(0f,1f)
+            if(averageProgress>0f){
+                val averageRadius=r-11.dp.toPx()
+                val averageBox=androidx.compose.ui.geometry.Size(
+                    averageRadius*2,
+                    averageRadius*2,
+                )
+                val averageTop=Offset(
+                    c.x-averageRadius,
+                    c.y-averageRadius,
+                )
+                val averageHalfSweep=135f*averageProgress
+                drawArc(
+                    secondary.copy(alpha=.68f),
+                    zeroAngle-averageHalfSweep,
+                    averageHalfSweep*2f,
+                    false,
+                    averageTop,
+                    averageBox,
+                    style=Stroke(2.5.dp.toPx(),cap=StrokeCap.Round),
+                )
+            }
+
             val zeroRad=Math.toRadians(zeroAngle.toDouble())
             val markerInner=r-11.dp.toPx()
             val markerOuter=r+1.dp.toPx()
@@ -319,7 +384,7 @@ fun AdaptiveAccelerationGauge(
         GaugeText(
             value="%+.1f".format(animatedValue),
             label="ACCEL m/s²",
-            scale="±${scale.roundToInt()}",
+            scale="AVG "+String.format(Locale.US,"%.1f",animatedAverage)+" · ±${scale.roundToInt()}",
             color=Color(0xFFF6FBFF),
         )
     }
