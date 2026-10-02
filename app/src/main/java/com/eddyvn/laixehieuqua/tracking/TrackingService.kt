@@ -31,6 +31,7 @@ class TrackingService:Service(){
     private var previous:Location?=null
     @Volatile private var stopping=false
     private var startJob:Job?=null
+    private var liveMotionJob:Job?=null
 
     override fun onCreate(){
         super.onCreate()
@@ -71,6 +72,16 @@ class TrackingService:Service(){
                 .build()
         )
         sensors.start()
+        liveMotionJob?.cancel()
+        liveMotionJob=scope.launch{
+            while(isActive&&!stopping){
+                store.updateLiveMotion(
+                    accelerationMs2=sensors.longitudinalAccelerationMs2,
+                    leanDeg=sensors.leanDeg,
+                )
+                delay(100L)
+            }
+        }
 
         if(ActivityCompat.checkSelfPermission(
                 this,
@@ -100,15 +111,17 @@ class TrackingService:Service(){
                     sessionStartMs=sessionStartMs,
                 )
 
-                // 500 ms desired cadence gives the estimator more frequent targets,
-                // while the UI still smooths independently. Android may deliver slower
-                // updates when GNSS conditions or power policy require it.
+                // Request fresh fixes aggressively while a ride is active.
+                // In particular, disable batching so the dashboard receives each
+                // available speed sample instead of waiting for a grouped delivery.
                 val request=LocationRequest.Builder(
                     Priority.PRIORITY_HIGH_ACCURACY,
-                    500L,
+                    250L,
                 )
-                    .setMinUpdateIntervalMillis(250L)
-                    .setMaxUpdateDelayMillis(1_000L)
+                    .setMinUpdateIntervalMillis(100L)
+                    .setMinUpdateDistanceMeters(0f)
+                    .setMaxUpdateDelayMillis(0L)
+                    .setWaitForAccurateLocation(false)
                     .build()
 
                 if(stopping)return@launch
@@ -141,6 +154,8 @@ class TrackingService:Service(){
         if(stopping)return
         app.graph.driveStateStore.setTrackingStatus(TrackingStatus.ERROR)
         fused.removeLocationUpdates(callback)
+        liveMotionJob?.cancel()
+        liveMotionJob=null
         sensors.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -210,6 +225,8 @@ class TrackingService:Service(){
         if(stopping)return
         stopping=true
         fused.removeLocationUpdates(callback)
+        liveMotionJob?.cancel()
+        liveMotionJob=null
         sensors.stop()
 
         scope.launch{
@@ -238,6 +255,8 @@ class TrackingService:Service(){
 
     override fun onDestroy(){
         fused.removeLocationUpdates(callback)
+        liveMotionJob?.cancel()
+        liveMotionJob=null
         sensors.stop()
         scope.cancel()
         super.onDestroy()
