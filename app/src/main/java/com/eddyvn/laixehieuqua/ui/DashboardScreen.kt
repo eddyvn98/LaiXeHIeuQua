@@ -45,7 +45,7 @@ fun DashboardScreen(
     )
     val speedTint by animateColorAsState(
         targetValue=speedTintTarget,
-        animationSpec=tween(520,easing=FastOutSlowInEasing),
+        animationSpec=tween(160,easing=FastOutSlowInEasing),
         label="speed-gauge-tint",
     )
     val trackingActive=trackingStatus in setOf(
