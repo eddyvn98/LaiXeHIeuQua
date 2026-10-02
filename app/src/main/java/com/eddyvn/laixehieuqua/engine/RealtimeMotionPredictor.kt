@@ -14,6 +14,10 @@ data class MotionPrediction(
  * GPS remains the authoritative speed source. Between fixes we integrate
  * signed longitudinal linear acceleration at 20 Hz, then reconcile back
  * toward the next fused GPS speed instead of letting prediction drift.
+ *
+ * vibrationScore is learned into a slowly moving noise floor. Fast lateral,
+ * vertical or rotational mount shake raises the effective dead-zone and
+ * attenuates sensor acceleration before integration.
  */
 class RealtimeMotionPredictor(
     private val accelerationTimeConstantSeconds:Double=.12,
@@ -28,6 +32,7 @@ class RealtimeMotionPredictor(
     private var lastGpsFixMs:Long?=null
     private var lastGpsSpeedKmh:Double?=null
     private var gpsTrendSign=0.0
+    private var vibrationFloor=0.18
 
     fun reset(){
         predictedSpeedKmh=0.0
@@ -36,6 +41,7 @@ class RealtimeMotionPredictor(
         lastGpsFixMs=null
         lastGpsSpeedKmh=null
         gpsTrendSign=0.0
+        vibrationFloor=0.18
     }
 
     fun onGpsFix(nowMs:Long,gpsSpeedKmh:Double):MotionPrediction{
@@ -74,6 +80,7 @@ class RealtimeMotionPredictor(
         nowMs:Long,
         signedLongitudinalAccelerationMs2:Double,
         sensorMagnitudeMs2:Double,
+        vibrationScore:Double=0.0,
     ):MotionPrediction?{
         val gpsFixTime=lastGpsFixMs?:return null
         val previousTick=lastTickMs?:nowMs.also{lastTickMs=it}
@@ -89,19 +96,42 @@ class RealtimeMotionPredictor(
                 (maxPredictionAgeMs-fullTrustAgeMs).toDouble()
         }
 
+        val vibration=vibrationScore.coerceIn(0.0,6.0)
+        // Learn the normal mount/engine vibration mostly while GPS says speed is
+        // stable. A slow update prevents one pothole or turn from becoming baseline.
+        if(abs(gpsTrendSign)<.25){
+            vibrationFloor=vibrationFloor*.985+vibration*.015
+        }else{
+            vibrationFloor=vibrationFloor*.997+vibration*.003
+        }
+        vibrationFloor=vibrationFloor.coerceIn(.08,2.5)
+
+        val excessVibration=(vibration-vibrationFloor).coerceAtLeast(0.0)
+        val adaptiveDeadZone=(
+            deadZoneMs2+
+                (vibrationFloor*.20).coerceAtMost(.28)+
+                (excessVibration*.16).coerceAtMost(.42)
+        ).coerceAtMost(.75)
+        val vibrationAttenuation=(1.0/(1.0+excessVibration*.65)).coerceIn(.28,1.0)
+
         val projected=signedLongitudinalAccelerationMs2
             .coerceIn(-maxAbsAccelerationMs2,maxAbsAccelerationMs2)
         val fallbackMagnitude=sensorMagnitudeMs2
             .coerceIn(0.0,maxAbsAccelerationMs2)
-        val fallbackSigned=fallbackMagnitude*gpsTrendSign*.65
+        val fallbackSigned=fallbackMagnitude*gpsTrendSign*.40
 
-        var target=if(abs(projected)>=deadZoneMs2){
-            projected
+        var target=if(abs(projected)>=adaptiveDeadZone){
+            projected*vibrationAttenuation
         }else{
-            fallbackSigned
+            fallbackSigned*vibrationAttenuation
         }
 
-        if(abs(target)<deadZoneMs2){
+        // If GPS has a clear speed trend, reject sensor impulses pointing the
+        // opposite way. This catches many lateral/vertical mount shocks.
+        if(gpsTrendSign>0.35&&target<0.0)target=0.0
+        if(gpsTrendSign<-.35&&target>0.0)target=0.0
+
+        if(abs(target)<adaptiveDeadZone){
             target=0.0
         }
         target*=trust
