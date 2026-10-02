@@ -5,6 +5,7 @@ data class DriveInputSample(
     val rawGpsSpeedKmh:Double,
     val gpsAccuracyM:Float,
     val accelerationMs2:Double,
+    val longitudinalAccelerationMs2:Double=accelerationMs2,
     val leanDeg:Double,
     val deltaDistanceM:Double,
 )

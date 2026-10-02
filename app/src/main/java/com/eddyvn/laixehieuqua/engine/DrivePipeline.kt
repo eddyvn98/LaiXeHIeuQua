@@ -48,13 +48,13 @@ class DrivePipeline {
         val trueSpeed=fusion.update(
             sample.timestampMs,
             sample.rawGpsSpeedKmh,
-            sample.accelerationMs2,
+            sample.longitudinalAccelerationMs2,
             sample.gpsAccuracyM,
         )
         val smoothAcceleration=accelerationEstimator.update(
             timeMs=sample.timestampMs,
             speedKmh=trueSpeed,
-            sensorAccelerationMs2=sample.accelerationMs2,
+            sensorAccelerationMs2=sample.longitudinalAccelerationMs2,
         )
         val traffic=trafficDetector.update(sample.timestampMs,trueSpeed)
         val target=eco.update(
@@ -64,8 +64,6 @@ class DrivePipeline {
             reference?.ecoSpeedKmh,
         )
 
-        // Camera/speedometer calibration is intentionally not applied to the live
-        // speed display anymore. GPS + sensor fusion is the single speed source.
         @Suppress("UNUSED_VARIABLE")
         val ignoredCalibration=activeCalibration
         val display=trueSpeed

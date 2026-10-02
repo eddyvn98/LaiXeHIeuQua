@@ -32,10 +32,10 @@ class SpeedFusionEngine {
         }
 
         val dt=((timeMs-previous).coerceIn(100,2500))/1000.0
-        val sensorMagnitude=abs(accelerationMs2).coerceAtMost(3.5)
+        val projected=accelerationMs2.coerceIn(-3.5,3.5)
         val signedAcceleration=when{
-            gps>lastSpeed+0.7 -> sensorMagnitude
-            gps<lastSpeed-0.7 -> -sensorMagnitude
+            gps>lastSpeed+0.7 -> projected.coerceAtLeast(0.0)
+            gps<lastSpeed-0.7 -> projected.coerceAtMost(0.0)
             else -> 0.0
         }
         val predicted=(lastSpeed+signedAcceleration*3.6*dt).coerceAtLeast(0.0)
