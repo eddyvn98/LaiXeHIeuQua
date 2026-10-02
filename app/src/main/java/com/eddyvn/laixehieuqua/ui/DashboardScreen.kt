@@ -152,6 +152,7 @@ private fun PortraitDashboardContent(
 
         SportSpeedGauge(
             speedKmh=drive.displaySpeedKmh,
+            averageSpeedKmh=drive.averageSpeedKmh,
             ecoTargetKmh=drive.ecoTargetKmh,
             accent=speedAccent,
             secondary=secondary,
@@ -173,7 +174,6 @@ private fun PortraitDashboardContent(
         InstrumentRow(
             vehicleOdometerKm=vehicleOdometerKm,
             tripMeterKm=tripMeterKm,
-            averageSpeedKmh=drive.averageSpeedKmh,
             sessionElapsedMs=sessionElapsedMs,
             onResetTrip=onResetTrip,
             onOdoClick=onOdoClick,
