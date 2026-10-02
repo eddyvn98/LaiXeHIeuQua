@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.hardware.SensorManager
 import android.location.Location
 import android.os.IBinder
+import android.os.SystemClock
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -15,22 +16,29 @@ import com.eddyvn.laixehieuqua.R
 import com.eddyvn.laixehieuqua.data.*
 import com.eddyvn.laixehieuqua.domain.DriveInputSample
 import com.eddyvn.laixehieuqua.engine.DrivePipeline
+import com.eddyvn.laixehieuqua.engine.RealtimeMotionPredictor
 import com.google.android.gms.location.*
 import kotlinx.coroutines.*
 import kotlin.math.max
 
 class TrackingService:Service(){
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.IO.limitedParallelism(1))
+    private val realtimeScope=CoroutineScope(
+        SupervisorJob()+Dispatchers.Default.limitedParallelism(1)
+    )
     private lateinit var fused:FusedLocationProviderClient
     private lateinit var sensors:SensorCollector
     private lateinit var app:LaiXeApp
 
     private val pipeline=DrivePipeline()
+    private val realtimePredictor=RealtimeMotionPredictor()
 
     private var sessionId:Long?=null
     private var previous:Location?=null
     @Volatile private var stopping=false
+    @Volatile private var latestBearingDeg:Float?=null
     private var startJob:Job?=null
+    private var predictionJob:Job?=null
 
     override fun onCreate(){
         super.onCreate()
@@ -61,6 +69,9 @@ class TrackingService:Service(){
         store.setTrackingStatus(TrackingStatus.STARTING)
         stopping=false
         previous=null
+        latestBearingDeg=null
+        realtimePredictor.reset()
+        predictionJob?.cancel()
 
         startForeground(
             NOTIFICATION_ID,
@@ -99,6 +110,7 @@ class TrackingService:Service(){
                     totalDistanceM=baseTotalDistanceM,
                     sessionStartMs=sessionStartMs,
                 )
+                startRealtimePrediction()
 
                 // Ask for the freshest GNSS fixes and avoid batching. The previous
                 // 1 s max delivery delay could make the dashboard feel several seconds
@@ -142,6 +154,8 @@ class TrackingService:Service(){
         if(stopping)return
         app.graph.driveStateStore.setTrackingStatus(TrackingStatus.ERROR)
         fused.removeLocationUpdates(callback)
+        predictionJob?.cancel()
+        realtimePredictor.reset()
         sensors.stop()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -156,6 +170,10 @@ class TrackingService:Service(){
         val delta=validatedDeltaMeters(old,location,raw)
         previous=location
 
+        if(location.hasBearing()&&raw>=3.0){
+            latestBearingDeg=location.bearing
+        }
+
         val sample=DriveInputSample(
             timestampMs=time,
             rawGpsSpeedKmh=raw,
@@ -168,6 +186,10 @@ class TrackingService:Service(){
             sample=sample,
             reference=app.graph.economyReferenceStore.state.value,
             activeCalibration=null,
+        )
+        realtimePredictor.onGpsFix(
+            nowMs=SystemClock.elapsedRealtime(),
+            gpsSpeedKmh=snapshot.displaySpeedKmh,
         )
         app.graph.driveStateStore.update(snapshot)
 
@@ -186,6 +208,29 @@ class TrackingService:Service(){
                     deltaDistanceM=delta,
                 )
             )
+        }
+    }
+
+    private fun startRealtimePrediction(){
+        predictionJob?.cancel()
+        predictionJob=realtimeScope.launch{
+            while(isActive&&!stopping){
+                if(app.graph.driveStateStore.trackingStatus.value==TrackingStatus.LIVE){
+                    val prediction=realtimePredictor.predict(
+                        nowMs=SystemClock.elapsedRealtime(),
+                        signedLongitudinalAccelerationMs2=
+                            sensors.longitudinalAccelerationMs2(latestBearingDeg),
+                        sensorMagnitudeMs2=sensors.accelerationMs2,
+                    )
+                    if(prediction!=null){
+                        app.graph.driveStateStore.updateRealtimeMotion(
+                            displaySpeedKmh=prediction.speedKmh,
+                            accelerationMs2=prediction.accelerationMs2,
+                        )
+                    }
+                }
+                delay(50L)
+            }
         }
     }
 
@@ -210,6 +255,7 @@ class TrackingService:Service(){
     private fun stopTracking(){
         if(stopping)return
         stopping=true
+        predictionJob?.cancel()
         fused.removeLocationUpdates(callback)
         sensors.stop()
 
@@ -238,9 +284,11 @@ class TrackingService:Service(){
     }
 
     override fun onDestroy(){
+        predictionJob?.cancel()
         fused.removeLocationUpdates(callback)
         sensors.stop()
         scope.cancel()
+        realtimeScope.cancel()
         super.onDestroy()
     }
 
