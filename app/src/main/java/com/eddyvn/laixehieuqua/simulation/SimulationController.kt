@@ -119,6 +119,7 @@ class SimulationController(
                             rawGpsSpeedKmh=frame.rawGpsSpeedKmh,
                             gpsAccuracyM=frame.gpsAccuracyM,
                             accelerationMs2=frame.accelerationMs2,
+                            longitudinalAccelerationMs2=frame.accelerationMs2,
                             leanDeg=frame.leanDeg,
                             deltaDistanceM=frame.deltaDistanceM,
                         ),
