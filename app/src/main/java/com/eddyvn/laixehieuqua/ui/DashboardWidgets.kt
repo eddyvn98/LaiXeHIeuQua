@@ -84,6 +84,7 @@ internal fun SubGaugeRow(
         )
         AdaptiveAccelerationGauge(
             value=drive.accelerationMs2,
+            averageMagnitudeMs2=drive.averageAccelerationMs2,
             accent=accent,
             secondary=secondary,
             modifier=Modifier.weight(1f).aspectRatio(1f),
@@ -101,7 +102,6 @@ internal fun SubGaugeRow(
 internal fun InstrumentRow(
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
-    averageSpeedKmh:Double,
     sessionElapsedMs:Long,
     onResetTrip:()->Unit,
     onOdoClick:()->Unit,
@@ -127,7 +127,6 @@ internal fun InstrumentRow(
             modifier=Modifier.weight(1f),
             onLongPress=onResetTrip,
         )
-        InstrumentMetric(averageSpeedKmh,"AVG","km/h",modifier=Modifier.weight(1f))
         InstrumentTextMetric(
             value=formatDuration(sessionElapsedMs),
             label="THỜI GIAN",
