@@ -21,6 +21,16 @@ class DriveStateStore{
     val trackingStatus:StateFlow<TrackingStatus> = mutableTrackingStatus
 
     fun update(value:DriveSnapshot){mutable.value=value}
+
+    fun updateLiveMotion(accelerationMs2:Double,leanDeg:Double){
+        mutable.update{
+            it.copy(
+                accelerationMs2=accelerationMs2,
+                leanDeg=leanDeg,
+            )
+        }
+    }
+
     fun setTrackingStatus(value:TrackingStatus){mutableTrackingStatus.value=value}
 
     fun beginSession(startMs:Long){
