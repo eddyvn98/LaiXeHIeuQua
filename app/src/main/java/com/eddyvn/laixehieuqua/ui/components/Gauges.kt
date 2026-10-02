@@ -38,7 +38,7 @@ fun SportSpeedGauge(
 ){
     val animatedSpeed by animateFloatAsState(
         targetValue=speedKmh.toFloat().coerceAtLeast(0f),
-        animationSpec=tween(520,easing=FastOutSlowInEasing),
+        animationSpec=tween(160,easing=FastOutSlowInEasing),
         label="speed-gauge",
     )
     val animatedEcoTarget by animateFloatAsState(
@@ -262,7 +262,7 @@ fun AdaptiveAccelerationGauge(
     val animatedValue by animateFloatAsState(
         targetValue=value.toFloat().coerceIn(-12f,12f),
         animationSpec=tween(
-            durationMillis=560,
+            durationMillis=180,
             easing=FastOutSlowInEasing,
         ),
         label="acceleration-gauge",

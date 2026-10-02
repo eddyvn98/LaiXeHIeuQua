@@ -9,7 +9,7 @@ import kotlin.math.sign
  * while sensor magnitude contributes only a small amount to responsiveness.
  */
 class LongitudinalAccelerationEstimator(
-    private val timeConstantSeconds:Double=.75,
+    private val timeConstantSeconds:Double=.30,
     private val deadZoneMs2:Double=.08,
     private val maxAbsMs2:Double=6.0,
 ){
