@@ -56,6 +56,7 @@ internal fun LandscapeHeader(
 @Composable
 internal fun LandscapePrimaryMetrics(
     acceleration:Double,
+    averageAcceleration:Double,
     slope:Double,
     accent:Color,
     secondary:Color,
@@ -72,6 +73,7 @@ internal fun LandscapePrimaryMetrics(
         )
         RunningAccelerationGauge(
             value=acceleration,
+            averageMagnitudeMs2=averageAcceleration,
             accent=accent,
             secondary=secondary,
             modifier=Modifier.weight(1f).fillMaxHeight(),
@@ -90,7 +92,6 @@ internal fun LandscapePrimaryMetrics(
 internal fun LandscapeTripMetrics(
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
-    averageSpeedKmh:Double,
     sessionElapsedMs:Long,
     efficiency:String,
     onResetTrip:()->Unit,
@@ -112,12 +113,6 @@ internal fun LandscapeTripMetrics(
             "TRIP km",
             Color.White,
             Modifier.weight(1f).combinedClickable(onClick={},onLongClick=onResetTrip),
-        )
-        ReadableMetric(
-            String.format(Locale.US,"%.0f",averageSpeedKmh),
-            "AVG km/h",
-            Color.White,
-            Modifier.weight(1f),
         )
         ReadableMetric(
             formatShortDuration(sessionElapsedMs),

@@ -9,6 +9,7 @@ data class DriveSnapshot(
     val displaySpeedKmh:Double=0.0,
     val rawGpsSpeedKmh:Double=0.0,
     val accelerationMs2:Double=0.0,
+    val averageAccelerationMs2:Double=0.0,
     val leanDeg:Double=0.0,
     val distanceKm:Double=0.0,
     val totalTrackedKm:Double=0.0,

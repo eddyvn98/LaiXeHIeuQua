@@ -81,11 +81,15 @@ fun RunningClockGauge(
 @Composable
 fun RunningAccelerationGauge(
     value:Double,
+    averageMagnitudeMs2:Double,
     accent:Color,
     secondary:Color,
     modifier:Modifier=Modifier,
 ){
-    val scaleTarget=autoRange(abs(value).toFloat(),listOf(2f,4f,6f,8f,12f,16f,24f,32f,50f))
+    val scaleTarget=autoRange(
+        maxOf(abs(value),averageMagnitudeMs2).toFloat(),
+        listOf(2f,4f,6f,8f,12f,16f,24f,32f,50f),
+    )
     var range by remember{mutableFloatStateOf(2f)}
     LaunchedEffect(scaleTarget){
         if(scaleTarget>range) range=scaleTarget
@@ -104,7 +108,13 @@ fun RunningAccelerationGauge(
         animationSpec=tween(180,easing=FastOutSlowInEasing),
         label="acceleration-reading",
     )
+    val animatedAverage by animateFloatAsState(
+        targetValue=averageMagnitudeMs2.toFloat().coerceAtLeast(0f),
+        animationSpec=tween(360,easing=FastOutSlowInEasing),
+        label="running-average-acceleration",
+    )
     val progress=(abs(animatedValue)/animatedRange).coerceIn(0f,1f)
+    val averageProgress=(animatedAverage/animatedRange).coerceIn(0f,1f)
     val liveColor=runningMetricColor(progress,accent,secondary)
 
     Box(modifier,contentAlignment=Alignment.Center){
@@ -123,6 +133,26 @@ fun RunningAccelerationGauge(
                     style=Stroke(5.dp.toPx(),cap=StrokeCap.Round),
                 )
             }
+            if(averageProgress>0f){
+                val averageRadius=radius-10.dp.toPx()
+                val averageBox=androidx.compose.ui.geometry.Size(
+                    averageRadius*2,
+                    averageRadius*2,
+                )
+                val averageTop=Offset(
+                    center.x-averageRadius,
+                    center.y-averageRadius,
+                )
+                drawArc(
+                    secondary.copy(alpha=.68f),
+                    135f,
+                    270f*averageProgress,
+                    false,
+                    averageTop,
+                    averageBox,
+                    style=Stroke(2.5.dp.toPx(),cap=StrokeCap.Round),
+                )
+            }
         }
         Column(horizontalAlignment=Alignment.CenterHorizontally){
             Text(
@@ -130,7 +160,10 @@ fun RunningAccelerationGauge(
                 color=Color.White,fontSize=19.sp,fontWeight=FontWeight.Bold,maxLines=1,
             )
             Text("ACCEL m/s²",color=Color(0xFFD7E5EF),fontSize=9.sp,maxLines=1)
-            Text("±${animatedRange.roundToInt()}",color=Color(0xFFB9C9D4),fontSize=8.sp,maxLines=1)
+            Text(
+                "AVG "+String.format(Locale.US,"%.1f",animatedAverage)+" · ±${animatedRange.roundToInt()}",
+                color=Color(0xFFB9C9D4),fontSize=8.sp,maxLines=1,
+            )
         }
     }
 }
