@@ -101,7 +101,7 @@ fun RunningAccelerationGauge(
     )
     val animatedValue by animateFloatAsState(
         targetValue=value.toFloat().coerceIn(-50f,50f),
-        animationSpec=tween(560,easing=FastOutSlowInEasing),
+        animationSpec=tween(120,easing=FastOutSlowInEasing),
         label="acceleration-reading",
     )
     val progress=(abs(animatedValue)/animatedRange).coerceIn(0f,1f)
