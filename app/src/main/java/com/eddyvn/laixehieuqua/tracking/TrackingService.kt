@@ -112,9 +112,6 @@ class TrackingService:Service(){
                 )
                 startRealtimePrediction()
 
-                // Ask for the freshest GNSS fixes and avoid batching. The previous
-                // 1 s max delivery delay could make the dashboard feel several seconds
-                // behind once device/GNSS scheduling latency was added on top.
                 val request=LocationRequest.Builder(
                     Priority.PRIORITY_HIGH_ACCURACY,
                     250L,
@@ -174,11 +171,13 @@ class TrackingService:Service(){
             latestBearingDeg=location.bearing
         }
 
+        val motion=sensors.vehicleMotionSample(latestBearingDeg)
         val sample=DriveInputSample(
             timestampMs=time,
             rawGpsSpeedKmh=raw,
             gpsAccuracyM=location.accuracy,
             accelerationMs2=sensors.accelerationMs2,
+            longitudinalAccelerationMs2=motion.longitudinalMs2,
             leanDeg=sensors.leanDeg,
             deltaDistanceM=delta,
         )
@@ -216,11 +215,12 @@ class TrackingService:Service(){
         predictionJob=realtimeScope.launch{
             while(isActive&&!stopping){
                 if(app.graph.driveStateStore.trackingStatus.value==TrackingStatus.LIVE){
+                    val motion=sensors.vehicleMotionSample(latestBearingDeg)
                     val prediction=realtimePredictor.predict(
                         nowMs=SystemClock.elapsedRealtime(),
-                        signedLongitudinalAccelerationMs2=
-                            sensors.longitudinalAccelerationMs2(latestBearingDeg),
+                        signedLongitudinalAccelerationMs2=motion.longitudinalMs2,
                         sensorMagnitudeMs2=sensors.accelerationMs2,
+                        vibrationScore=motion.vibrationScore,
                     )
                     if(prediction!=null){
                         app.graph.driveStateStore.updateRealtimeMotion(
@@ -239,7 +239,6 @@ class TrackingService:Service(){
         if(current.accuracy>30f || old.accuracy>30f)return 0.0
 
         val oldSpeedKmh=(old.speed*3.6).coerceAtLeast(0.0)
-        // Both samples say stopped: ignore coordinate wander completely.
         if(currentSpeedKmh<2.0 && oldSpeedKmh<2.0)return 0.0
 
         val distance=old.distanceTo(current).toDouble()
