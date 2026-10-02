@@ -176,6 +176,9 @@ internal fun ReadableMetric(
 
 @Composable
 private fun formatShortDuration(elapsedMs:Long):String{
-    val totalMinutes=elapsedMs.coerceAtLeast(0L)/60_000L
-    return "%02d:%02d".format(totalMinutes/60L,totalMinutes%60L)
+    val totalSeconds=elapsedMs.coerceAtLeast(0L)/1_000L
+    val hours=totalSeconds/3_600L
+    val minutes=(totalSeconds%3_600L)/60L
+    val seconds=totalSeconds%60L
+    return "%02d:%02d:%02d".format(hours,minutes,seconds)
 }
