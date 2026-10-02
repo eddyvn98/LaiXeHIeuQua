@@ -3,6 +3,13 @@ package com.eddyvn.laixehieuqua.tracking
 import android.hardware.*
 import kotlin.math.*
 
+data class VehicleMotionSample(
+    val longitudinalMs2:Double,
+    val lateralMs2:Double,
+    val verticalMs2:Double,
+    val vibrationScore:Double,
+)
+
 class SensorCollector(private val manager:SensorManager):SensorEventListener{
     @Volatile var accelerationMs2=0.0
         private set
@@ -11,6 +18,8 @@ class SensorCollector(private val manager:SensorManager):SensorEventListener{
 
     @Volatile private var worldEastAccelerationMs2=0.0
     @Volatile private var worldNorthAccelerationMs2=0.0
+    @Volatile private var worldUpAccelerationMs2=0.0
+    @Volatile private var gyroMagnitudeRadS=0.0
 
     private val baselinePitches=ArrayDeque<Double>()
     private var pitchBaselineDeg:Double?=null
@@ -29,6 +38,8 @@ class SensorCollector(private val manager:SensorManager):SensorEventListener{
         accelerationMs2=0.0
         worldEastAccelerationMs2=0.0
         worldNorthAccelerationMs2=0.0
+        worldUpAccelerationMs2=0.0
+        gyroMagnitudeRadS=0.0
         accelerationInitialized=false
         rotationReady=false
         deviceAccelerationX=0.0
@@ -41,23 +52,60 @@ class SensorCollector(private val manager:SensorManager):SensorEventListener{
         manager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)?.let{
             manager.registerListener(this,it,SensorManager.SENSOR_DELAY_GAME)
         }
+        manager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)?.let{
+            manager.registerListener(this,it,SensorManager.SENSOR_DELAY_GAME)
+        }
     }
 
     fun stop()=manager.unregisterListener(this)
 
     /**
-     * Projects gravity-free acceleration into the current direction of travel.
-     * Android world axes are east/north/up; GPS bearing is clockwise from north.
-     * Positive means accelerating forward, negative means braking/decelerating.
+     * Projects gravity-free acceleration into vehicle coordinates using the
+     * current GPS bearing. Android world axes are east/north/up.
+     *
+     * longitudinal: positive forward, negative braking.
+     * lateral: positive approximately to the vehicle's right.
      */
-    fun longitudinalAccelerationMs2(bearingDeg:Float?):Double{
-        if(bearingDeg==null||!rotationReady)return 0.0
+    fun vehicleMotionSample(bearingDeg:Float?):VehicleMotionSample{
+        if(bearingDeg==null||!rotationReady){
+            return VehicleMotionSample(
+                longitudinalMs2=0.0,
+                lateralMs2=0.0,
+                verticalMs2=worldUpAccelerationMs2,
+                vibrationScore=(
+                    abs(worldUpAccelerationMs2)*.30+
+                        gyroMagnitudeRadS*.85
+                ).coerceIn(0.0,6.0),
+            )
+        }
+
         val radians=Math.toRadians(bearingDeg.toDouble())
-        val projected=
+        val longitudinal=
             worldEastAccelerationMs2*sin(radians)+
                 worldNorthAccelerationMs2*cos(radians)
-        return if(abs(projected)<.08)0.0 else projected.coerceIn(-8.0,8.0)
+        val lateral=
+            worldEastAccelerationMs2*cos(radians)-
+                worldNorthAccelerationMs2*sin(radians)
+
+        // Mount/engine vibration usually appears strongly outside the vehicle
+        // longitudinal axis. Gyro magnitude catches rapid phone rotation that
+        // an accelerometer-only filter cannot distinguish from real motion.
+        val vibrationScore=(
+            abs(lateral)*.55+
+                abs(worldUpAccelerationMs2)*.25+
+                gyroMagnitudeRadS*.85
+        ).coerceIn(0.0,6.0)
+
+        return VehicleMotionSample(
+            longitudinalMs2=if(abs(longitudinal)<.04)0.0 else longitudinal.coerceIn(-8.0,8.0),
+            lateralMs2=lateral.coerceIn(-8.0,8.0),
+            verticalMs2=worldUpAccelerationMs2.coerceIn(-8.0,8.0),
+            vibrationScore=vibrationScore,
+        )
     }
+
+    fun longitudinalAccelerationMs2(bearingDeg:Float?):Double=
+        vehicleMotionSample(bearingDeg).longitudinalMs2
 
     override fun onSensorChanged(e:SensorEvent){
         when(e.sensor.type){
@@ -103,6 +151,15 @@ class SensorCollector(private val manager:SensorManager):SensorEventListener{
                     leanDeg=-normalizeAngle(pitch-pitchBaselineDeg!!)
                 }
             }
+
+            Sensor.TYPE_GYROSCOPE->{
+                val gx=e.values[0].toDouble()
+                val gy=e.values[1].toDouble()
+                val gz=e.values[2].toDouble()
+                val raw=sqrt(gx*gx+gy*gy+gz*gz)
+                // Fast enough to react to mount shake, but suppress single-sample spikes.
+                gyroMagnitudeRadS=gyroMagnitudeRadS*.72+raw*.28
+            }
         }
     }
 
@@ -120,6 +177,10 @@ class SensorCollector(private val manager:SensorManager):SensorEventListener{
             rotationMatrix[3]*x+
                 rotationMatrix[4]*y+
                 rotationMatrix[5]*z
+        worldUpAccelerationMs2=
+            rotationMatrix[6]*x+
+                rotationMatrix[7]*y+
+                rotationMatrix[8]*z
     }
 
     private fun normalizeAngle(value:Double):Double{
