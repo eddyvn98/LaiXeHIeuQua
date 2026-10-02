@@ -100,15 +100,16 @@ class TrackingService:Service(){
                     sessionStartMs=sessionStartMs,
                 )
 
-                // 500 ms desired cadence gives the estimator more frequent targets,
-                // while the UI still smooths independently. Android may deliver slower
-                // updates when GNSS conditions or power policy require it.
+                // Ask for the freshest GNSS fixes and avoid batching. The previous
+                // 1 s max delivery delay could make the dashboard feel several seconds
+                // behind once device/GNSS scheduling latency was added on top.
                 val request=LocationRequest.Builder(
                     Priority.PRIORITY_HIGH_ACCURACY,
-                    500L,
+                    250L,
                 )
-                    .setMinUpdateIntervalMillis(250L)
-                    .setMaxUpdateDelayMillis(1_000L)
+                    .setMinUpdateIntervalMillis(100L)
+                    .setMinUpdateDistanceMeters(0f)
+                    .setWaitForAccurateLocation(false)
                     .build()
 
                 if(stopping)return@launch
