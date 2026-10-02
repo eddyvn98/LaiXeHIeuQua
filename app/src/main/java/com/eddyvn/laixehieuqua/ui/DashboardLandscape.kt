@@ -52,6 +52,7 @@ internal fun LandscapeDashboardContent(
             ){
                 SportSpeedGauge(
                     speedKmh=drive.displaySpeedKmh,
+                    averageSpeedKmh=drive.averageSpeedKmh,
                     ecoTargetKmh=drive.ecoTargetKmh,
                     accent=speedAccent,
                     secondary=secondary,
@@ -74,6 +75,7 @@ internal fun LandscapeDashboardContent(
             ){
                 LandscapePrimaryMetrics(
                     acceleration=drive.accelerationMs2,
+                    averageAcceleration=drive.averageAccelerationMs2,
                     slope=drive.leanDeg,
                     accent=accent,
                     secondary=secondary,
@@ -82,7 +84,6 @@ internal fun LandscapeDashboardContent(
                 LandscapeTripMetrics(
                     vehicleOdometerKm=vehicleOdometerKm,
                     tripMeterKm=tripMeterKm,
-                    averageSpeedKmh=drive.averageSpeedKmh,
                     sessionElapsedMs=sessionElapsedMs,
                     efficiency=efficiency,
                     onResetTrip=onResetTrip,
