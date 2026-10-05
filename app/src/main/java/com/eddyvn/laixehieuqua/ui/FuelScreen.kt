@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -24,13 +23,26 @@ fun FuelScreen(
     entries:List<FuelEntryEntity>,
     summary:FuelSummary,
     marketPrice:FuelMarketPriceState,
+    currentOdoKm:Double?,
     onRefreshPrice:(Boolean)->Unit,
-    onAdd:(Double,Double?,Boolean,Double?)->Unit,
+    onRecord:(Double,Double,Double,Boolean,Double?)->Unit,
+    onStartCycle:(Double)->Unit,
+    onEditOdo:(Long,Double)->Unit,
+    onDelete:(Long)->Unit,
+    onResetAll:()->Unit,
 ){
+    var odoText by remember(currentOdoKm){mutableStateOf(currentOdoKm?.let{"%.1f".format(Locale.US,it)}?:"")}
     var amountText by remember{mutableStateOf("")}
     var priceText by remember{mutableStateOf("")}
     var priceEdited by remember{mutableStateOf(false)}
     var full by remember{mutableStateOf(true)}
+    var capacityText by remember(summary.tankCapacityLiters){
+        mutableStateOf(summary.tankCapacityLiters?.let{"%.1f".format(Locale.US,it)}?:"")
+    }
+    var showStartDialog by remember{mutableStateOf(false)}
+    var editEntry by remember{mutableStateOf<FuelEntryEntity?>(null)}
+    var deleteEntry by remember{mutableStateOf<FuelEntryEntity?>(null)}
+    var showResetConfirm by remember{mutableStateOf(false)}
     val marketPricePerLiter=marketPrice.price?.pricePerLiter
 
     LaunchedEffect(Unit){onRefreshPrice(false)}
@@ -38,54 +50,47 @@ fun FuelScreen(
         if(!priceEdited&&marketPricePerLiter!=null)priceText=marketPricePerLiter.toString()
     }
 
-    val amount=amountText.toLongOrNull()?.toDouble()
+    val odo=odoText.toDoubleOrNull()
+    val amount=amountText.toDoubleOrNull()
     val price=priceText.toDoubleOrNull()
     val liters=if(amount!=null&&price!=null&&price>0)amount/price else null
+    val capacity=capacityText.toDoubleOrNull()
     val latestCycle=summary.cycles.lastOrNull()
 
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal=16.dp),
         verticalArrangement=Arrangement.spacedBy(10.dp),
-        contentPadding=PaddingValues(top=12.dp,bottom=20.dp),
+        contentPadding=PaddingValues(top=12.dp,bottom=24.dp),
     ){
-        item{Text("Đổ xăng",style=MaterialTheme.typography.headlineSmall)}
         item{
-            Card(Modifier.fillMaxWidth()){
-                Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){
-                    Text("Quãng đường đã ghi nhận",style=MaterialTheme.typography.titleSmall)
-                    Text("%.1f km từ lần đổ đầy gần nhất".format(summary.currentCycleKm))
-                    Text("Quãng đường tính từ các chuyến GPS đã lưu.",style=MaterialTheme.typography.bodySmall)
-                }
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+                Text("Đổ xăng",style=MaterialTheme.typography.headlineSmall)
+                TextButton(onClick={showResetConfirm=true},enabled=entries.isNotEmpty()){Text("RESET")}
             }
         }
         item{
             Card(Modifier.fillMaxWidth()){
-                Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){
-                    Text("Ước tính nhiên liệu",style=MaterialTheme.typography.titleMedium)
-                    if(summary.averageKmPerLiter!=null){
-                        Text(
-                            "Còn khoảng %.1f L · ~%.0f km".format(
-                                summary.estimatedRemainingLiters?:0.0,
-                                summary.estimatedRangeKm?:0.0,
-                            ),
-                            style=MaterialTheme.typography.titleLarge,
-                        )
-                        Text(
-                            "Trung bình %.2f L/100 km · %.1f km/L · %d chu kỳ".format(
-                                summary.averageLitersPer100Km?:0.0,
-                                summary.averageKmPerLiter,
-                                summary.learnedCycleCount,
-                            ),
-                            style=MaterialTheme.typography.bodySmall,
-                        )
+                Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
+                    Text("Chu kỳ nhiên liệu",style=MaterialTheme.typography.titleMedium)
+                    Text("%.1f km từ mốc đổ đầy gần nhất".format(summary.currentCycleKm))
+                    if(entries.isEmpty()){
+                        Text("Chưa có mốc bắt đầu. Nhập ODO ban đầu để bắt đầu chu kỳ trước lần đổ xăng tiếp theo.",style=MaterialTheme.typography.bodySmall)
+                        OutlinedButton(onClick={showStartDialog=true},modifier=Modifier.fillMaxWidth()){Text("TẠO MỐC BẮT ĐẦU")}
                     }else{
-                        Text("Đang học. Cần ít nhất một chu kỳ đổ đầy hoàn chỉnh để ước tính xăng còn lại và quãng đường còn chạy.",style=MaterialTheme.typography.bodyMedium)
-                    }
-                    if(summary.tankCapacityLiters==null){
-                        Text("Nhập dung tích bình ở lần ghi nhận đổ xăng tiếp theo.",style=MaterialTheme.typography.bodySmall)
+                        Text("Có thể sửa ODO hoặc xóa từng bản ghi ở phần lịch sử nếu nhập sai.",style=MaterialTheme.typography.bodySmall)
                     }
                 }
             }
+        }
+        item{
+            OutlinedTextField(
+                value=odoText,
+                onValueChange={odoText=decimalFilter(it)},
+                label={Text("ODO tại thời điểm đổ xăng (km)")},
+                keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
+                singleLine=true,
+                modifier=Modifier.fillMaxWidth(),
+            )
         }
         item{
             OutlinedTextField(
@@ -100,27 +105,19 @@ fun FuelScreen(
         item{
             Card(Modifier.fillMaxWidth()){
                 Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){
-                    Row(verticalAlignment=Alignment.CenterVertically){
-                        Column(Modifier.weight(1f)){
-                            Text("Giá RON 95-V · TP.HCM",style=MaterialTheme.typography.titleSmall)
-                            val effective=marketPrice.price?.effectiveDate
-                            Text(
-                                if(effective!=null)"Giá kỳ $effective · VietFuel / Petrolimex Sài Gòn"
-                                else "Giá tham khảo · VietFuel / Petrolimex Sài Gòn",
-                                style=MaterialTheme.typography.bodySmall,
-                            )
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+                        Column{
+                            Text("Giá RON 95-V",style=MaterialTheme.typography.titleSmall)
+                            Text(marketPrice.price?.effectiveDate?.let{"Giá kỳ $it"}?:"Giá tham khảo",style=MaterialTheme.typography.bodySmall)
                         }
-                        TextButton(
-                            onClick={priceEdited=false;onRefreshPrice(true)},
-                            enabled=!marketPrice.loading,
-                        ){
+                        TextButton(onClick={priceEdited=false;onRefreshPrice(true)},enabled=!marketPrice.loading){
                             Text(if(marketPrice.loading)"Đang tải…" else "Cập nhật")
                         }
                     }
                     OutlinedTextField(
                         value=priceText,
-                        onValueChange={priceText=it.filter{ch->ch.isDigit()||ch=='.'};priceEdited=true},
-                        label={Text("Giá mỗi lít (₫) · có thể chỉnh")},
+                        onValueChange={priceText=decimalFilter(it);priceEdited=true},
+                        label={Text("Giá mỗi lít (₫)")},
                         keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
                         singleLine=true,
                         modifier=Modifier.fillMaxWidth(),
@@ -130,37 +127,40 @@ fun FuelScreen(
             }
         }
         item{
-            Card(Modifier.fillMaxWidth()){
-                Row(
-                    Modifier.fillMaxWidth().padding(14.dp),
-                    horizontalArrangement=Arrangement.SpaceBetween,
-                    verticalAlignment=Alignment.CenterVertically,
-                ){
-                    Text("Lượng xăng ước tính",style=MaterialTheme.typography.titleSmall)
-                    Text(liters?.takeIf{it>0}?.let{"%.2f lít".format(it)}?:"—",style=MaterialTheme.typography.titleLarge)
-                }
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){
+                Text("Lượng xăng ước tính")
+                Text(liters?.takeIf{it>0}?.let{"%.2f L".format(it)}?:"—",style=MaterialTheme.typography.titleLarge)
             }
         }
         item{
-            Row(verticalAlignment=Alignment.CenterVertically){
+            Row{
                 Checkbox(checked=full,onCheckedChange={full=it})
                 Column{
                     Text("Đổ đầy bình")
-                    Text("Bật để tính km/L giữa các lần đổ đầy.",style=MaterialTheme.typography.bodySmall)
+                    Text("Bật để đóng/mở chu kỳ tính km/L.",style=MaterialTheme.typography.bodySmall)
                 }
             }
         }
         item{
+            OutlinedTextField(
+                value=capacityText,
+                onValueChange={capacityText=decimalFilter(it)},
+                label={Text("Dung tích bình (L) · tùy chọn")},
+                keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
+                singleLine=true,
+                modifier=Modifier.fillMaxWidth(),
+            )
+        }
+        item{
+            val enabled=odo!=null&&odo>=0&&amount!=null&&amount>0&&price!=null&&price>0&&liters!=null
             Button(
                 onClick={
-                    val paid=amount
-                    val volume=liters
-                    if(paid!=null&&volume!=null&&paid>0&&volume>0){
-                        onAdd(volume,paid,full,null)
+                    if(enabled){
+                        onRecord(odo!!,price!!,amount!!,full,capacity)
                         amountText=""
                     }
                 },
-                enabled=amount!=null&&amount>0&&liters!=null&&liters>0,
+                enabled=enabled,
                 modifier=Modifier.fillMaxWidth().height(52.dp),
             ){Text("GHI NHẬN ĐỔ XĂNG")}
         }
@@ -170,29 +170,104 @@ fun FuelScreen(
                     Text("Mức tiêu thụ",style=MaterialTheme.typography.titleMedium)
                     if(latestCycle!=null){
                         Text("%.1f km/L".format(latestCycle.kmPerLiter),style=MaterialTheme.typography.headlineSmall)
-                        Text(
-                            "%.1f km ÷ %.2f lít · giữa hai lần đổ đầy".format(latestCycle.distanceKm,latestCycle.liters),
-                            style=MaterialTheme.typography.bodySmall,
-                        )
-                    }else if(entries.any{it.isFull}){
-                        Text("Đã có mốc đầu. Km/L sẽ được tính sau lần đổ đầy tiếp theo.",style=MaterialTheme.typography.bodyMedium)
+                        Text("%.1f km ÷ %.2f L".format(latestCycle.distanceKm,latestCycle.liters))
                     }else{
-                        Text("Km/L bắt đầu được tính từ lần đổ đầy thứ hai.",style=MaterialTheme.typography.bodyMedium)
+                        Text("Cần hai mốc đổ đầy (hoặc mốc bắt đầu + lần đổ đầy) để tính chu kỳ.")
                     }
-                    summary.bestCycle?.let{Text("Tốt nhất: %.1f km/L".format(it.kmPerLiter),style=MaterialTheme.typography.bodySmall)}
+                    summary.averageLitersPer100Km?.let{Text("Trung bình %.2f L/100 km".format(it),style=MaterialTheme.typography.bodySmall)}
                 }
             }
         }
         item{Text("Lịch sử",style=MaterialTheme.typography.titleMedium)}
         items(entries,key={it.id}){entry->
+            val isStart=entry.isFull&&entry.liters==0.0&&entry.totalPrice==null
             val date=SimpleDateFormat("dd/MM/yyyy HH:mm",vietnamLocale).format(Date(entry.timestampMs))
-            val paid=entry.totalPrice?.let{" · %,.0f ₫".format(vietnamLocale,it)}?:""
-            val unit=entry.totalPrice?.takeIf{entry.liters>0}?.div(entry.liters)
-                ?.let{" · %,.0f ₫/lít".format(vietnamLocale,it)}?:""
-            ListItem(
-                headlineContent={Text("%.2f lít$paid".format(entry.liters))},
-                supportingContent={Text("$date · ${if(entry.isFull)"Đổ đầy" else "Đổ thêm"}$unit")},
-            )
+            Card(Modifier.fillMaxWidth()){
+                Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){
+                    Text(
+                        if(isStart)"Mốc bắt đầu chu kỳ"
+                        else "%.2f L%s".format(entry.liters,entry.totalPrice?.let{" · %,.0f ₫".format(vietnamLocale,it)}?:""),
+                        style=MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        "$date · ODO ${entry.vehicleOdometerKm?.let{"%.1f km".format(it)}?:"—"}" +
+                            if(isStart)"" else " · ${if(entry.isFull)"Đổ đầy" else "Đổ thêm"}",
+                        style=MaterialTheme.typography.bodySmall,
+                    )
+                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.End){
+                        TextButton(onClick={editEntry=entry}){Text("SỬA ODO")}
+                        TextButton(onClick={deleteEntry=entry}){Text("XÓA")}
+                    }
+                }
+            }
         }
     }
+
+    if(showStartDialog){
+        OdoValueDialog(
+            title="Mốc bắt đầu chu kỳ",
+            initial=currentOdoKm,
+            confirmLabel="TẠO MỐC",
+            onDismiss={showStartDialog=false},
+            onConfirm={onStartCycle(it);showStartDialog=false},
+        )
+    }
+    editEntry?.let{entry->
+        OdoValueDialog(
+            title="Sửa ODO bản ghi",
+            initial=entry.vehicleOdometerKm,
+            confirmLabel="LƯU",
+            onDismiss={editEntry=null},
+            onConfirm={onEditOdo(entry.id,it);editEntry=null},
+        )
+    }
+    deleteEntry?.let{entry->
+        AlertDialog(
+            onDismissRequest={deleteEntry=null},
+            title={Text("Xóa bản ghi?")},
+            text={Text("Chu kỳ và mức tiêu thụ sẽ được tính lại sau khi xóa.")},
+            confirmButton={TextButton(onClick={onDelete(entry.id);deleteEntry=null}){Text("XÓA")}},
+            dismissButton={TextButton(onClick={deleteEntry=null}){Text("HỦY")}},
+        )
+    }
+    if(showResetConfirm){
+        AlertDialog(
+            onDismissRequest={showResetConfirm=false},
+            title={Text("Reset dữ liệu đổ xăng?")},
+            text={Text("Xóa toàn bộ lịch sử nhiên liệu để nhập lại từ đầu. Dữ liệu hành trình GPS không bị xóa.")},
+            confirmButton={TextButton(onClick={onResetAll();showResetConfirm=false}){Text("RESET")}},
+            dismissButton={TextButton(onClick={showResetConfirm=false}){Text("HỦY")}},
+        )
+    }
 }
+
+@Composable
+private fun OdoValueDialog(
+    title:String,
+    initial:Double?,
+    confirmLabel:String,
+    onDismiss:()->Unit,
+    onConfirm:(Double)->Unit,
+){
+    var text by remember(initial){mutableStateOf(initial?.let{"%.1f".format(Locale.US,it)}?:"")}
+    val value=text.toDoubleOrNull()
+    AlertDialog(
+        onDismissRequest=onDismiss,
+        title={Text(title)},
+        text={
+            OutlinedTextField(
+                value=text,
+                onValueChange={text=decimalFilter(it)},
+                label={Text("ODO (km)")},
+                keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal),
+                singleLine=true,
+            )
+        },
+        confirmButton={
+            TextButton(onClick={value?.let{onConfirm(it)}},enabled=value!=null&&value>=0){Text(confirmLabel)}
+        },
+        dismissButton={TextButton(onClick=onDismiss){Text("HỦY")}},
+    )
+}
+
+private fun decimalFilter(value:String)=value.filter{it.isDigit()||it=='.'}
