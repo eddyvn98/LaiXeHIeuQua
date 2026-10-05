@@ -82,6 +82,41 @@ class FuelRepository(
         tankStore.setCapacity(liters)
     }
 
+    suspend fun addCycleStart(
+        vehicleOdometerKm:Double,
+        timestampMs:Long=System.currentTimeMillis(),
+    ){
+        if(vehicleOdometerKm<0.0)return
+        dao.insertFuelEntry(
+            FuelEntryEntity(
+                timestampMs=timestampMs,
+                liters=0.0,
+                totalPrice=null,
+                isFull=true,
+                vehicleOdometerKm=vehicleOdometerKm,
+                appOdometerKm=dao.totalTrackedDistanceM()/1000.0,
+            )
+        )
+        refreshBestReference()
+    }
+
+    suspend fun updateEntryOdometer(id:Long,vehicleOdometerKm:Double){
+        if(id<=0L||vehicleOdometerKm<0.0)return
+        dao.updateFuelOdometer(id,vehicleOdometerKm)
+        refreshBestReference()
+    }
+
+    suspend fun deleteEntry(id:Long){
+        if(id<=0L)return
+        dao.deleteFuelEntry(id)
+        refreshBestReference()
+    }
+
+    suspend fun resetFuelHistory(){
+        dao.clearFuelEntries()
+        store.set(null)
+    }
+
     suspend fun refreshBestReference(){
         val best=engine.bestCycle(engine.buildCycles(dao.fuelEntries()))
         if(best==null){store.set(null);return}
