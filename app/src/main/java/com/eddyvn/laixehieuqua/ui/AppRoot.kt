@@ -35,11 +35,17 @@ fun AppRoot(vm:MainViewModel=viewModel()){
     val fuel by vm.fuelEntries.collectAsStateWithLifecycle()
     val summary by vm.fuelSummary.collectAsStateWithLifecycle()
     val fuelMarketPrice by vm.fuelMarketPrice.collectAsStateWithLifecycle()
+    val weather by vm.weather.collectAsStateWithLifecycle()
     val projection by vm.projection.collectAsStateWithLifecycle()
     val simulation by vm.simulation.collectAsStateWithLifecycle()
     val vehicleOdometerKm by vm.vehicleOdometerKm.collectAsStateWithLifecycle()
     val tripMeterKm by vm.tripMeterKm.collectAsStateWithLifecycle()
     val selected=templates.firstOrNull{it.selected}
+
+    LaunchedEffect(Unit){vm.refreshWeather(false)}
+    LaunchedEffect(drive.totalTrackedKm){
+        if(drive.totalTrackedKm>0.0)vm.refreshWeather(false)
+    }
 
     val permissionLauncher=rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -103,6 +109,8 @@ fun AppRoot(vm:MainViewModel=viewModel()){
                     vehicleOdometerKm=vehicleOdometerKm,
                     tripMeterKm=tripMeterKm,
                     fuelSummary=summary,
+                    weather=weather,
+                    onRefreshWeather={vm.refreshWeather(true)},
                     onResetTrip=vm::resetTripMeter,
                     onOdoClick={showOdoDialog=true},
                     onFuelClick={
@@ -137,8 +145,13 @@ fun AppRoot(vm:MainViewModel=viewModel()){
                     entries=fuel,
                     summary=summary,
                     marketPrice=fuelMarketPrice,
+                    currentOdoKm=vehicleOdometerKm,
                     onRefreshPrice=vm::refreshFuelMarketPrice,
-                    onAdd=vm::addFuel,
+                    onRecord=vm::recordFuelFromDrive,
+                    onStartCycle=vm::startFuelCycle,
+                    onEditOdo=vm::updateFuelEntryOdometer,
+                    onDelete=vm::deleteFuelEntry,
+                    onResetAll=vm::resetFuelHistory,
                 )
             }
             composable("garage"){

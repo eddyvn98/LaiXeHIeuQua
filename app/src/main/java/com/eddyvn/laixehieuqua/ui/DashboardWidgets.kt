@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
@@ -15,11 +16,15 @@ import androidx.compose.ui.unit.*
 import com.composables.icons.tabler.Tabler
 import com.composables.icons.tabler.outline.GasStation
 import com.eddyvn.laixehieuqua.data.DashboardTemplateEntity
+import com.eddyvn.laixehieuqua.data.WeatherState
 import com.eddyvn.laixehieuqua.domain.DriveSnapshot
 import com.eddyvn.laixehieuqua.tracking.TrackingStatus
 import com.eddyvn.laixehieuqua.ui.components.*
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 internal fun DashboardHeader(
@@ -284,4 +289,92 @@ internal fun DriveStatusHint(
                 fontWeight=FontWeight.Bold,
             )
     }
+}
+
+
+@Composable
+internal fun WeatherDateStrip(
+    weather:WeatherState,
+    onRefresh:()->Unit,
+    compact:Boolean=false,
+){
+    var nowMs by remember{mutableLongStateOf(System.currentTimeMillis())}
+    LaunchedEffect(Unit){
+        while(true){
+            nowMs=System.currentTimeMillis()
+            delay(60_000L)
+        }
+    }
+    val locale=remember{Locale.forLanguageTag("vi-VN")}
+    val dateText=remember(nowMs){
+        SimpleDateFormat("EEEE, dd/MM/yyyy",locale).format(Date(nowMs))
+            .replaceFirstChar{if(it.isLowerCase())it.titlecase(locale) else it.toString()}
+    }
+    val weatherText=when{
+        weather.loading->"Đang tải thời tiết…"
+        weather.currentTempC!=null->buildString{
+            append("%.0f°C · %s".format(weather.currentTempC,weatherLabel(weather.weatherCode)))
+            if(weather.todayMaxC!=null&&weather.todayMinC!=null){
+                append(" · %.0f/%.0f°C".format(weather.todayMaxC,weather.todayMinC))
+            }
+            weather.todayRainChance?.let{append(" · mưa $it%")}
+        }
+        weather.error!=null->weather.error
+        else->"Chưa có dự báo"
+    }
+    val tomorrow=if(
+        weather.tomorrowMaxC!=null&&weather.tomorrowMinC!=null
+    ){
+        "Mai %.0f/%.0f°C%s".format(
+            weather.tomorrowMaxC,
+            weather.tomorrowMinC,
+            weather.tomorrowRainChance?.let{" · mưa $it%"}?:"",
+        )
+    }else null
+
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal=if(compact)0.dp else 2.dp,vertical=if(compact)1.dp else 3.dp),
+        verticalAlignment=Alignment.CenterVertically,
+        horizontalArrangement=Arrangement.spacedBy(6.dp),
+    ){
+        Column(Modifier.weight(1f)){
+            Text(
+                dateText,
+                fontSize=if(compact)9.sp else 10.sp,
+                color=Color(0xFFD5E2EA),
+                fontWeight=FontWeight.Bold,
+                maxLines=1,
+            )
+            Text(
+                weatherText,
+                fontSize=if(compact)9.sp else 10.sp,
+                color=Color.White,
+                maxLines=1,
+                overflow=TextOverflow.Ellipsis,
+            )
+            if(!compact&&tomorrow!=null){
+                Text(tomorrow,fontSize=8.sp,color=Color(0xFF9FB4C2),maxLines=1)
+            }
+        }
+        TextButton(
+            onClick=onRefresh,
+            enabled=!weather.loading,
+            contentPadding=PaddingValues(horizontal=6.dp,vertical=0.dp),
+            modifier=Modifier.height(28.dp),
+        ){Text("↻",fontSize=15.sp)}
+    }
+}
+
+private fun weatherLabel(code:Int?):String=when(code){
+    0->"Trời quang"
+    1,2->"Ít mây"
+    3->"Nhiều mây"
+    45,48->"Sương mù"
+    51,53,55,56,57->"Mưa phùn"
+    61,63,65,66,67->"Mưa"
+    71,73,75,77->"Tuyết"
+    80,81,82->"Mưa rào"
+    85,86->"Mưa tuyết"
+    95,96,99->"Dông"
+    else->"Thời tiết"
 }

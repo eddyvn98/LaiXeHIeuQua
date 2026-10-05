@@ -12,4 +12,15 @@ class FuelEconomyEngineTest{
   val c=FuelEconomyEngine().buildCycles(entries).single()
   assertEquals(250.0,c.distanceKm,.01);assertEquals(5.0,c.liters,.01);assertEquals(50.0,c.kmPerLiter,.01);assertEquals(FuelConfidence.HIGH,c.confidence)
  }
+
+ @Test fun cycleCanStartFromOdoBaseline(){
+  val entries=listOf(
+   FuelEntryEntity(timestampMs=1,liters=0.0,totalPrice=null,isFull=true,vehicleOdometerKm=2000.0,appOdometerKm=0.0),
+   FuelEntryEntity(timestampMs=2,liters=4.0,totalPrice=100000.0,isFull=true,vehicleOdometerKm=2120.0,appOdometerKm=120.0))
+  val c=FuelEconomyEngine().buildCycles(entries).single()
+  assertEquals(120.0,c.distanceKm,.01)
+  assertEquals(4.0,c.liters,.01)
+  assertEquals(30.0,c.kmPerLiter,.01)
+  assertEquals(FuelConfidence.HIGH,c.confidence)
+ }
 }

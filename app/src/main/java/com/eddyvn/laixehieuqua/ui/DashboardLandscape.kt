@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.eddyvn.laixehieuqua.data.WeatherState
 import com.eddyvn.laixehieuqua.domain.DriveSnapshot
 import com.eddyvn.laixehieuqua.domain.FuelSummary
 import com.eddyvn.laixehieuqua.ui.components.EconomyGapChart
@@ -21,6 +22,8 @@ internal fun LandscapeDashboardContent(
     tripMeterKm:Double,
     sessionElapsedMs:Long,
     fuelSummary:FuelSummary,
+    weather:WeatherState,
+    onRefreshWeather:()->Unit,
     onResetTrip:()->Unit,
     onOdoClick:()->Unit,
     onFuelClick:()->Unit,
@@ -39,6 +42,7 @@ internal fun LandscapeDashboardContent(
 
     Column(Modifier.fillMaxSize().padding(horizontal=14.dp,vertical=6.dp)){
         LandscapeHeader(statusLabel,secondary,onFuelClick)
+        WeatherDateStrip(weather,onRefreshWeather,compact=true)
 
         Row(
             Modifier.fillMaxWidth().weight(1f),

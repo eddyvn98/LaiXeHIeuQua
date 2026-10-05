@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.*
 import com.composables.icons.tabler.Tabler
 import com.composables.icons.tabler.outline.GasStation
 import com.eddyvn.laixehieuqua.data.DashboardTemplateEntity
+import com.eddyvn.laixehieuqua.data.WeatherState
 import com.eddyvn.laixehieuqua.domain.DriveSnapshot
 import com.eddyvn.laixehieuqua.domain.FuelSummary
 import com.eddyvn.laixehieuqua.tracking.TrackingStatus
@@ -32,6 +33,8 @@ fun DashboardScreen(
     vehicleOdometerKm:Double?,
     tripMeterKm:Double,
     fuelSummary:FuelSummary,
+    weather:WeatherState,
+    onRefreshWeather:()->Unit,
     onResetTrip:()->Unit,
     onOdoClick:()->Unit,
     onFuelClick:()->Unit,
@@ -85,6 +88,8 @@ fun DashboardScreen(
                 tripMeterKm=tripMeterKm,
                 sessionElapsedMs=displayedSessionElapsedMs,
                 fuelSummary=fuelSummary,
+                weather=weather,
+                onRefreshWeather=onRefreshWeather,
                 onResetTrip=onResetTrip,
                 onOdoClick=onOdoClick,
                 onFuelClick=onFuelClick,
@@ -107,6 +112,8 @@ fun DashboardScreen(
                 tripMeterKm=tripMeterKm,
                 sessionElapsedMs=displayedSessionElapsedMs,
                 fuelSummary=fuelSummary,
+                weather=weather,
+                onRefreshWeather=onRefreshWeather,
                 onResetTrip=onResetTrip,
                 onOdoClick=onOdoClick,
                 onFuelClick=onFuelClick,
@@ -131,6 +138,8 @@ private fun PortraitDashboardContent(
     tripMeterKm:Double,
     sessionElapsedMs:Long,
     fuelSummary:FuelSummary,
+    weather:WeatherState,
+    onRefreshWeather:()->Unit,
     onResetTrip:()->Unit,
     onOdoClick:()->Unit,
     onFuelClick:()->Unit,
@@ -149,6 +158,7 @@ private fun PortraitDashboardContent(
         DashboardHeader(
             statusLabel,trackingStatus,template,drive.rawGpsSpeedKmh,secondary,onFuelClick
         )
+        WeatherDateStrip(weather,onRefreshWeather)
 
         SportSpeedGauge(
             speedKmh=drive.displaySpeedKmh,
