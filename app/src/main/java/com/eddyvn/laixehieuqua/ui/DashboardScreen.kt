@@ -80,7 +80,7 @@ fun DashboardScreen(
         TrackingStatus.STOPPING,
     )
 
-    if(template?.layoutType=="SPORT_COCKPIT_V1"){
+    if(isSportCockpitLayout(template?.layoutType)){
         SportCockpitDashboard(
             drive=drive,
             trackingStatus=trackingStatus,
@@ -221,3 +221,7 @@ private fun PortraitDashboardContent(
         DriveStatusHint(drive,trackingStatus,secondary)
     }
 }
+
+
+internal fun isSportCockpitLayout(layoutType:String?):Boolean=
+    layoutType=="SPORT_COCKPIT_V1"
