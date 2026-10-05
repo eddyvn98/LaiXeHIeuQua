@@ -1,9 +1,11 @@
 package com.eddyvn.laixehieuqua.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -42,7 +44,7 @@ internal fun SportStatusBar(
     }?:if(weather.loading)"ĐANG TẢI..." else "THỜI TIẾT —"
 
     Row(
-        Modifier.fillMaxWidth()
+        Modifier.fillMaxWidth().padding(end=52.dp)
             .background(
                 Brush.horizontalGradient(listOf(Color(0xFF111318),Color(0xFF20242B),Color(0xFF111318))),
                 RoundedCornerShape(14.dp),
@@ -195,6 +197,7 @@ internal fun SportFuelStrip(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun SportDataStrip(
     odo:Double?,
@@ -202,6 +205,8 @@ internal fun SportDataStrip(
     elapsed:String,
     accent:Color,
     modifier:Modifier=Modifier,
+    onOdoClick:()->Unit,
+    onResetTrip:()->Unit,
 ){
     Row(
         modifier
@@ -213,8 +218,16 @@ internal fun SportDataStrip(
             .padding(horizontal=8.dp,vertical=8.dp),
         horizontalArrangement=Arrangement.SpaceEvenly,
     ){
-        SportDataItem(odo?.let{"%.1f".format(Locale.US,it)}?:"—","ODO",Modifier.weight(1f))
-        SportDataItem("%.1f".format(Locale.US,trip),"TRIP",Modifier.weight(1f))
+        SportDataItem(
+            odo?.let{"%.1f".format(Locale.US,it)}?:"—",
+            "ODO",
+            Modifier.weight(1f).clickable(onClick=onOdoClick),
+        )
+        SportDataItem(
+            "%.1f".format(Locale.US,trip),
+            "TRIP",
+            Modifier.weight(1f).combinedClickable(onClick={},onLongClick=onResetTrip),
+        )
         SportDataItem(elapsed,"TIME",Modifier.weight(1f))
     }
 }
