@@ -80,7 +80,25 @@ fun DashboardScreen(
         TrackingStatus.STOPPING,
     )
 
-    BoxWithConstraints(Modifier.fillMaxSize()){
+    if(template?.layoutType=="SPORT_COCKPIT_V1"){
+        SportCockpitDashboard(
+            drive=drive,
+            trackingStatus=trackingStatus,
+            vehicleOdometerKm=vehicleOdometerKm,
+            tripMeterKm=tripMeterKm,
+            sessionElapsedMs=displayedSessionElapsedMs,
+            fuelSummary=fuelSummary,
+            weather=weather,
+            accent=accent,
+            secondary=secondary,
+            onRefreshWeather=onRefreshWeather,
+            onOdoClick=onOdoClick,
+            onFuelClick=onFuelClick,
+            onResetTrip=onResetTrip,
+            onStart=onStart,
+            onStop=onStop,
+        )
+    }else BoxWithConstraints(Modifier.fillMaxSize()){
         if(maxWidth>maxHeight){
             LandscapeDashboardContent(
                 drive=drive,
