@@ -7,6 +7,7 @@ import com.eddyvn.laixehieuqua.LaiXeApp
 import com.eddyvn.laixehieuqua.camera.CalibrationSampleCollector
 import com.eddyvn.laixehieuqua.data.DashboardTemplateEntity
 import com.eddyvn.laixehieuqua.data.FuelMarketPriceState
+import com.eddyvn.laixehieuqua.data.WeatherState
 import com.eddyvn.laixehieuqua.domain.*
 import com.eddyvn.laixehieuqua.engine.EconomyProjectionEngine
 import com.eddyvn.laixehieuqua.simulation.*
@@ -65,6 +66,10 @@ class MainViewModel(application:Application):AndroidViewModel(application){
     )
     val fuelMarketPrice:StateFlow<FuelMarketPriceState> = _fuelMarketPrice
     private var lastFuelPriceRefreshMs=0L
+
+    private val _weather=MutableStateFlow(WeatherState())
+    val weather:StateFlow<WeatherState> = _weather
+    private var lastWeatherRefreshMs=0L
 
     val projection=combine(drive,fuelSummary){snapshot,summary->
         projectionEngine.project(snapshot,summary)
@@ -162,6 +167,32 @@ class MainViewModel(application:Application):AndroidViewModel(application){
         }
     }
 
+    fun startFuelCycle(odometerKm:Double){
+        if(odometerKm<0.0)return
+        setVehicleOdometer(odometerKm)
+        viewModelScope.launch{
+            graph.fuelRepository.addCycleStart(odometerKm)
+        }
+    }
+
+    fun updateFuelEntryOdometer(id:Long,odometerKm:Double){
+        viewModelScope.launch{
+            graph.fuelRepository.updateEntryOdometer(id,odometerKm)
+        }
+    }
+
+    fun deleteFuelEntry(id:Long){
+        viewModelScope.launch{
+            graph.fuelRepository.deleteEntry(id)
+        }
+    }
+
+    fun resetFuelHistory(){
+        viewModelScope.launch{
+            graph.fuelRepository.resetFuelHistory()
+        }
+    }
+
     fun recordFuelFromDrive(
         odometerKm:Double,
         unitPrice:Double,
@@ -183,6 +214,27 @@ class MainViewModel(application:Application):AndroidViewModel(application){
                 isFull=full,
                 vehicleOdometerKm=odometerKm,
             )
+        }
+    }
+
+    fun refreshWeather(force:Boolean=false){
+        val now=System.currentTimeMillis()
+        if(_weather.value.loading||(!force&&now-lastWeatherRefreshMs<30*60*1000))return
+        viewModelScope.launch{
+            val point=graph.database.dao().latestTrackPoint()
+            if(point==null){
+                _weather.value=WeatherState(error="Chưa có vị trí GPS để tải thời tiết.")
+                return@launch
+            }
+            lastWeatherRefreshMs=now
+            _weather.update{it.copy(loading=true,error=null)}
+            try{
+                _weather.value=graph.weatherRepository.fetch(point.latitude,point.longitude)
+            }catch(error:CancellationException){
+                throw error
+            }catch(_:Exception){
+                _weather.update{it.copy(loading=false,error="Không tải được dự báo thời tiết.")}
+            }
         }
     }
 
