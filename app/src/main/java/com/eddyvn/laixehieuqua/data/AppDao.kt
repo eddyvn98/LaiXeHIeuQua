@@ -30,6 +30,9 @@ interface AppDao {
     @Query("SELECT COALESCE(SUM(deltaDistanceM),0) FROM track_points WHERE sessionId=:sessionId")
     suspend fun sessionDistanceM(sessionId:Long):Double
 
+    @Query("SELECT * FROM track_points ORDER BY timestampMs DESC LIMIT 1")
+    suspend fun latestTrackPoint():TrackPointEntity?
+
     @Query("SELECT COALESCE(AVG(trueSpeedKmh),0) FROM track_points WHERE sessionId=:sessionId")
     suspend fun sessionAvgSpeed(sessionId:Long):Double
 
@@ -46,6 +49,15 @@ interface AppDao {
 
     @Query("SELECT * FROM fuel_entries ORDER BY timestampMs DESC")
     fun fuelEntriesFlow():Flow<List<FuelEntryEntity>>
+
+    @Query("UPDATE fuel_entries SET vehicleOdometerKm=:odometerKm WHERE id=:id")
+    suspend fun updateFuelOdometer(id:Long,odometerKm:Double)
+
+    @Query("DELETE FROM fuel_entries WHERE id=:id")
+    suspend fun deleteFuelEntry(id:Long)
+
+    @Query("DELETE FROM fuel_entries")
+    suspend fun clearFuelEntries()
 
     @Insert(onConflict=OnConflictStrategy.REPLACE) suspend fun upsertTemplates(items:List<DashboardTemplateEntity>)
     @Insert(onConflict=OnConflictStrategy.REPLACE) suspend fun upsertTemplate(item:DashboardTemplateEntity)
