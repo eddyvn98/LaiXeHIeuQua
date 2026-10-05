@@ -62,6 +62,7 @@ interface AppDao {
     @Insert(onConflict=OnConflictStrategy.REPLACE) suspend fun upsertTemplates(items:List<DashboardTemplateEntity>)
     @Insert(onConflict=OnConflictStrategy.REPLACE) suspend fun upsertTemplate(item:DashboardTemplateEntity)
     @Query("SELECT COUNT(*) FROM dashboard_templates") suspend fun templateCount():Int
+    @Query("SELECT * FROM dashboard_templates WHERE id=:id LIMIT 1") suspend fun templateById(id:String):DashboardTemplateEntity?
     @Query("SELECT * FROM dashboard_templates ORDER BY builtIn DESC,name ASC")
     fun templatesFlow():Flow<List<DashboardTemplateEntity>>
     @Query("UPDATE dashboard_templates SET selected=CASE WHEN id=:id THEN 1 ELSE 0 END")
